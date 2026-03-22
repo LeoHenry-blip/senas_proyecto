@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Señas V2 — Iniciar sesión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .login-wrap {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .login-hero {
+      background: linear-gradient(135deg, #0f1929 0%, #162040 100%);
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 4rem;
+      border-right: 1px solid var(--border);
+      position: relative; overflow: hidden;
+    }
+    .login-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 30% 50%, rgba(79,142,247,.12) 0%, transparent 70%);
+    }
+    .hero-emoji { font-size: 5rem; margin-bottom: 1.5rem; }
+    .hero-title { font-size: 2.8rem; font-weight: 800; letter-spacing: -.04em; line-height: 1.1; margin-bottom: 1rem; }
+    .hero-sub   { color: var(--text-200); font-size: 1.05rem; max-width: 380px; }
+    .feature-list { margin-top: 2rem; display: flex; flex-direction: column; gap: .6rem; }
+    .feature-item { display: flex; align-items: center; gap: .75rem; color: var(--text-200); font-size: .9rem; }
+    .feature-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+    .login-form-wrap {
+      display: flex; align-items: center; justify-content: center;
+      padding: 2rem;
+      background: var(--bg-900);
+    }
+    .login-form-box {
+      width: 100%; max-width: 400px;
+    }
+    .login-form-box h2 { margin-bottom: .4rem; }
+    .login-form-box .subtitle { color: var(--text-300); margin-bottom: 2rem; font-size: .9rem; }
+
+    .form-group { margin-bottom: 1rem; }
+    .tab-switch {
+      display: flex; gap: 0;
+      background: var(--bg-700);
+      border-radius: var(--radius-md);
+      padding: 4px; margin-bottom: 1.5rem;
+    }
+    .tab-btn {
+      flex: 1; padding: .5rem; text-align: center;
+      border: none; background: transparent; cursor: pointer;
+      border-radius: 8px;
+      color: var(--text-300); font-size: .88rem; font-weight: 600;
+      transition: all var(--transition);
+    }
+    .tab-btn.active { background: var(--bg-600); color: var(--text-100); }
+
+    .divider-text {
+      display: flex; align-items: center; gap: .75rem;
+      color: var(--text-300); font-size: .8rem; margin: 1.25rem 0;
+    }
+    .divider-text::before, .divider-text::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .btn-google {
+      display: flex; align-items: center; justify-content: center;
+      gap: .75rem; width: 100%; padding: .65rem;
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: var(--radius-md); color: var(--text-100);
+      font-size: .9rem; font-weight: 500; cursor: pointer;
+      transition: all var(--transition);
+    }
+    .btn-google:hover { background: var(--bg-600); border-color: var(--border-light); }
+
+    @media (max-width: 768px) {
+      .login-wrap { grid-template-columns: 1fr; }
+      .login-hero  { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+
+  <!-- HERO IZQUIERDO -->
+  <div class="login-hero">
+    <div class="hero-emoji">🤟</div>
+    <h1 class="hero-title">Señas V2</h1>
+    <p class="hero-sub">
+      Plataforma de comunicación en tiempo real para personas sordas y oyentes.
+    </p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-dot"></span>Reconocimiento de lenguaje de señas con IA</div>
+      <div class="feature-item"><span class="feature-dot"></span>Chat y videollamadas en tiempo real</div>
+      <div class="feature-item"><span class="feature-dot"></span>Corrección inteligente de frases</div>
+      <div class="feature-item"><span class="feature-dot"></span>Subtítulos automáticos para oyentes</div>
+      <div class="feature-item"><span class="feature-dot"></span>Panel de entrenamiento de gestos</div>
+    </div>
+  </div>
+
+  <!-- FORMULARIO DERECHO -->
+  <div class="login-form-wrap">
+    <div class="login-form-box">
+
+      <h2>Bienvenido</h2>
+      <p class="subtitle">Accede a tu cuenta o créate una nueva</p>
+
+      <!-- Tabs Login / Registro -->
+      <div class="tab-switch">
+        <button class="tab-btn active" onclick="mostrarTab('login')">Iniciar sesión</button>
+        <button class="tab-btn"       onclick="mostrarTab('registro')">Registrarse</button>
+      </div>
+
+      <!-- ---- FORM LOGIN ---- -->
+      <div id="tab-login">
+        <div class="form-group input-group">
+          <label>Correo electrónico</label>
+          <input id="login-email" class="input" type="email" placeholder="usuario@email.com">
+        </div>
+        <div class="form-group input-group">
+          <label>Contraseña</label>
+          <input id="login-password" class="input" type="password" placeholder="Tu contraseña">
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="hacerLogin()">
+          Entrar
+        </button>
+
+        <div class="divider-text">o continúa con</div>
+
+        <button class="btn-google" onclick="loginGoogle()">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.1 30.2 0 24 0 14.7 0 6.7 5.4 2.8 13.3l7.8 6.1C12.5 13 17.8 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.6 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 6.9-10.1 6.9-17z" />
+            <path fill="#FBBC05" d="M10.6 28.4A14.5 14.5 0 0 1 9.5 24c0-1.5.3-3 .8-4.4L2.5 13.5A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.5l8.1-6.1z"/>
+            <path fill="#34A853" d="M24 48c6.5 0 12-2.1 16-5.8l-7.5-5.8c-2.1 1.5-4.8 2.3-8.5 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.8 6A23.9 23.9 0 0 0 24 48z"/>
+          </svg>
+          Continuar con Google
+        </button>
+      </div>
+
+      <!-- ---- FORM REGISTRO ---- -->
+      <div id="tab-registro" style="display:none">
+        <div class="form-group input-group">
+          <label>Nombre completo</label>
+          <input id="reg-nombre" class="input" type="text" placeholder="Tu nombre">
+        </div>
+        <div class="form-group input-group">
+          <label>Correo electrónico</label>
+          <input id="reg-email" class="input" type="email" placeholder="usuario@email.com">
+        </div>
+        <div class="form-group input-group">
+          <label>Contraseña</label>
+          <input id="reg-password" class="input" type="password" placeholder="Mínimo 6 caracteres">
+        </div>
+        <button class="btn btn-success btn-full btn-lg" onclick="hacerRegistro()">
+          Crear cuenta
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/app.js"></script>
+<script>
+  // Redirigir si ya está logueado
+  Auth.redirigirSiLogueado();
+
+  function mostrarTab(tab) {
+    document.getElementById('tab-login').style.display   = tab === 'login'    ? '' : 'none';
+    document.getElementById('tab-registro').style.display = tab === 'registro' ? '' : 'none';
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'registro' && i === 1));
+    });
+  }
+
+  async function hacerLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { toast('Completa todos los campos', 'error'); return; }
+    try {
+      const res = await Api.post('/auth/login', { email, password });
+      Auth.guardar(res.token, res.usuario);
+      toast('¡Bienvenido!', 'success');
+      setTimeout(() => window.location.href = '/dashboard.html', 600);
+    } catch (e) { toast(e.message, 'error'); }
+  }
+
+  async function hacerRegistro() {
+    const nombre   = document.getElementById('reg-nombre').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    if (!nombre || !email || !password) { toast('Completa todos los campos', 'error'); return; }
+    if (password.length < 6) { toast('La contraseña debe tener al menos 6 caracteres', 'error'); return; }
+    try {
+      await Api.post('/auth/registro', { nombre, email, password });
+      toast('Cuenta creada. Inicia sesión.', 'success');
+      mostrarTab('login');
+      document.getElementById('login-email').value = email;
+    } catch (e) { toast(e.message, 'error'); }
+  }
+
+  function loginGoogle() {
+    // En producción: implementar flujo OAuth completo con popup
+    toast('Google OAuth: configura CLIENT_ID en producción', 'info');
+  }
+
+  // Entrar con Enter
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const activo = document.getElementById('tab-login').style.display !== 'none';
+      if (activo) hacerLogin(); else hacerRegistro();
+    }
+  });
+</script>
+</body>
+</html>

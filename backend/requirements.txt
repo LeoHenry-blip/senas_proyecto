@@ -1,0 +1,34 @@
+# ============================================================
+# requirements.txt  —  Señas V2
+# ============================================================
+# Instalar todo con:
+#   pip install -r requirements.txt
+
+# --- Servidor Web ---
+fastapi>=0.111.0          # Framework API REST
+uvicorn[standard]>=0.29.0 # Servidor ASGI con WebSockets
+python-multipart>=0.0.9   # Para upload de archivos
+
+# --- Base de datos MySQL ---
+PyMySQL>=1.1.1             # Driver MySQL puro Python (sin C)
+cryptography>=42.0.0       # Dependencia de PyMySQL para SSL
+
+# --- Autenticación ---
+PyJWT>=2.8.0               # JSON Web Tokens
+bcrypt>=4.1.3              # Hash seguro de contraseñas
+python-dotenv>=1.0.1       # Cargar variables de entorno desde .env
+
+# --- Visión por computadora (del sistema V1) ---
+opencv-python>=4.9.0       # Captura y procesamiento de imagen
+mediapipe>=0.10.14         # Detección de manos (21 landmarks)
+numpy>=1.26.0              # Operaciones matemáticas
+
+# --- IA y audio ---
+pyttsx3>=2.90              # Síntesis de voz offline (opcional en servidor)
+
+# --- IA externa (opcional - descomentar si se usa) ---
+# anthropic>=0.25.0        # API Claude para corrección IA
+# openai>=1.0.0            # API GPT (alternativa)
+
+# --- Validación de datos ---
+pydantic[email]>=2.7.0     # Validación con soporte para EmailStr

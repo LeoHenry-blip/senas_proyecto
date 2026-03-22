@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Señas V2 — Reunión</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { overflow: hidden; margin: 0; background: #202124; }
+
+    /* ======================================================
+       LAYOUT
+    ====================================================== */
+    .sala-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr 230px;
+      height: calc(100vh - 58px - 80px);
+      overflow: hidden;
+    }
+    @media (max-width: 900px) {
+      .sala-layout { grid-template-columns: 280px 1fr; }
+      .panel-participantes { display: none; }
+    }
+    @media (max-width: 600px) {
+      .sala-layout { grid-template-columns: 1fr; grid-template-rows: 220px 1fr; }
+      .panel-camara { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+
+    /* ======================================================
+       PANEL CÁMARA
+    ====================================================== */
+    .panel-camara {
+      background: var(--bg-800); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; min-width: 0;
+    }
+    .camara-titulo {
+      padding: .5rem .8rem; font-size: .72rem; font-weight: 600;
+      color: var(--text-300); text-transform: uppercase; letter-spacing: .06em;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .video-wrap { position: relative; flex: 1; background: #000; overflow: hidden; min-height: 0; }
+    #video-local { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:none; }
+    #canvas-overlay { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+
+    .cam-placeholder {
+      position:absolute; inset:0; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      background: radial-gradient(ellipse at center, #1e2a3a 0%, #111418 100%);
+      gap:.6rem;
+    }
+    .cam-placeholder .av-circulo {
+      width:76px; height:76px; border-radius:50%;
+      background:#2d3748; border:3px solid #4a5568;
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.9rem; font-weight:800; color:#e2e8f0;
+      box-shadow:0 0 24px rgba(79,142,247,.2);
+    }
+    .cam-placeholder .av-nombre { font-size:.82rem; font-weight:600; color:#a0aec0; }
+    .cam-placeholder .av-estado {
+      font-size:.68rem; color:#718096;
+      display:flex; align-items:center; gap:.3rem;
+    }
+    .cam-placeholder .av-estado::before {
+      content:''; width:6px; height:6px; border-radius:50%; background:#fc8181; display:inline-block;
+    }
+
+    .confianza-bar { padding:.35rem .8rem; background:var(--bg-900); flex-shrink:0; }
+    .confianza-label { font-size:.65rem; color:var(--text-300); margin-bottom:.2rem; display:flex; justify-content:space-between; }
+    .recono-info { padding:.55rem .8rem; flex-shrink:0; background:var(--bg-800); border-top:1px solid var(--border); }
+    .letra-display   { font-size:3.2rem; font-weight:800; color:var(--accent); line-height:1; }
+    .palabra-display { font-size:.95rem; font-weight:600; color:var(--accent-2); margin-top:.15rem; }
+    .frase-display   { font-size:.78rem; color:var(--text-200); margin-top:.15rem; min-height:1em; word-break:break-all; }
+
+    /* ======================================================
+       PANEL CHAT
+    ====================================================== */
+    .panel-chat { display:flex; flex-direction:column; background:var(--bg-900); overflow:hidden; min-width:0; }
+    .chat-header {
+      padding:.5rem .8rem; background:var(--bg-800); border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:.6rem; flex-shrink:0;
+    }
+    .sala-codigo { font-family:var(--font-mono); font-size:.75rem; color:var(--text-300); }
+    .chat-mensajes { flex:1; overflow-y:auto; padding:.8rem; display:flex; flex-direction:column; gap:.45rem; }
+    .mensaje-burbuja { display:flex; gap:.45rem; max-width:90%; animation:fadeUp .16s ease; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+    .mensaje-burbuja.propio { margin-left:auto; flex-direction:row-reverse; }
+    .msg-contenido {
+      background:var(--bg-600); border:1px solid var(--border);
+      border-radius:var(--radius-md); border-bottom-left-radius:2px;
+      padding:.5rem .75rem; max-width:100%;
+    }
+    .mensaje-burbuja.propio .msg-contenido {
+      background:rgba(79,142,247,.13); border-color:rgba(79,142,247,.3);
+      border-bottom-right-radius:2px; border-bottom-left-radius:var(--radius-md);
+    }
+    .msg-autor { font-size:.65rem; font-weight:700; color:var(--accent); margin-bottom:.12rem; }
+    .msg-texto { font-size:.85rem; word-break:break-word; }
+    .msg-ia    { font-size:.68rem; color:var(--accent-2); margin-top:.2rem; border-top:1px solid var(--border); padding-top:.2rem; }
+    .msg-hora  { font-size:.62rem; color:var(--text-300); margin-top:.12rem; text-align:right; }
+    .msg-sistema { text-align:center; font-size:.72rem; color:var(--text-300); font-style:italic; padding:.12rem; }
+
+    .subtitulos-live {
+      padding:.45rem .8rem; background:var(--bg-800);
+      border-top:1px solid var(--border); min-height:46px; flex-shrink:0;
+    }
+    .sub-nombre { font-size:.65rem; color:var(--text-300); font-weight:600; }
+    .sub-frase  { font-size:.88rem; color:var(--text-100); margin-top:.08rem; }
+
+    .chat-input-area {
+      padding:.45rem .8rem; background:var(--bg-800);
+      border-top:1px solid var(--border);
+      display:flex; gap:.4rem; align-items:flex-end; flex-shrink:0;
+    }
+    .chat-input-area textarea {
+      flex:1; resize:none; height:38px; background:var(--bg-700);
+      border:1px solid var(--border); border-radius:var(--radius-sm);
+      color:var(--text-100); font-family:var(--font); font-size:.85rem;
+      padding:.4rem .65rem; outline:none; transition:border-color var(--transition);
+    }
+    .chat-input-area textarea:focus { border-color:var(--accent); }
+
+    /* ======================================================
+       PANEL PARTICIPANTES
+    ====================================================== */
+    .panel-participantes {
+      background:var(--bg-800); border-left:1px solid var(--border);
+      display:flex; flex-direction:column; overflow:hidden; min-width:0;
+    }
+    .panel-participantes h4 {
+      padding:.55rem .8rem; font-size:.68rem; color:var(--text-300);
+      text-transform:uppercase; letter-spacing:.06em;
+      border-bottom:1px solid var(--border); flex-shrink:0;
+    }
+    .participantes-lista { flex:1; overflow-y:auto; padding:.3rem 0; }
+    .part-item { display:flex; align-items:center; gap:.5rem; padding:.45rem .8rem; }
+    .part-estado { width:7px; height:7px; border-radius:50%; background:var(--success); flex-shrink:0; }
+    .video-remoto-wrap { border-top:1px solid var(--border); padding:.6rem; flex-shrink:0; }
+    .video-remoto-wrap h4 { font-size:.68rem;color:var(--text-300);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem;border:none;padding:0; }
+    .video-peer { background:var(--bg-700); border-radius:var(--radius-md); overflow:hidden; aspect-ratio:4/3; position:relative; border:1px solid var(--border); margin-bottom:.35rem; }
+    .video-peer video { width:100%; height:100%; object-fit:cover; }
+    .video-peer-avatar { position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#1e2a3a,#111418);gap:.3rem; }
+    .video-peer-avatar .avc { width:40px;height:40px;border-radius:50%;background:var(--bg-500);border:2px solid var(--border-light);display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:var(--text-100); }
+    .video-peer-avatar .avn { font-size:.65rem;color:var(--text-300); }
+    .video-peer-label { position:absolute;bottom:3px;left:5px;font-size:.62rem;background:rgba(0,0,0,.7);color:#fff;padding:2px 5px;border-radius:4px; }
+
+    /* ======================================================
+       BARRA INFERIOR ESTILO GOOGLE MEET CON ICONOS SVG
+    ====================================================== */
+    .meet-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 80px;
+      background: #202124;
+      border-top: 1px solid #3c4043;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.25rem; z-index: 100;
+      gap: 1rem;
+    }
+
+    /* Izquierda */
+    .meet-left {
+      display: flex; align-items: center; gap: .65rem;
+      min-width: 160px;
+    }
+    .meet-time { font-size: .82rem; color: #e8eaed; font-weight: 500; letter-spacing: .03em; }
+    .meet-dot  { width: 6px; height: 6px; border-radius: 50%; background: #34a853; }
+    .meet-code { font-size: .7rem; color: #9aa0a6; font-family: monospace; }
+
+    /* Centro */
+    .meet-center { display: flex; align-items: center; gap: .35rem; }
+
+    /* Derecha */
+    .meet-right {
+      display: flex; align-items: center; gap: .35rem;
+      min-width: 160px; justify-content: flex-end;
+    }
+
+    /* ---- Botón base ---- */
+    .mb {
+      position: relative;
+      width: 48px; height: 48px; border-radius: 50%;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      background: #3c4043; color: #e8eaed;
+      transition: background .15s ease, transform .12s ease;
+      flex-shrink: 0;
+    }
+    .mb:hover { background: #5f6368; transform: scale(1.06); }
+    .mb svg   { width: 22px; height: 22px; pointer-events: none; }
+
+    /* Estado apagado: fondo rojo suave */
+    .mb.off { background: #f28b82; color: #202124; }
+    .mb.off:hover { background: #ee675c; }
+    .mb.off svg { stroke: #202124; }
+
+    /* Estado activo: azul */
+    .mb.on  { background: #8ab4f8; color: #202124; }
+    .mb.on:hover { background: #669df6; }
+    .mb.on svg { stroke: #202124; }
+
+    /* ---- Grupo doble (cámara/mic con flecha) ---- */
+    .mb-group {
+      display: flex; align-items: center;
+      background: #3c4043; border-radius: 999px;
+      overflow: hidden; transition: opacity .15s ease;
+    }
+    .mb-group .mb-main {
+      width: 48px; height: 48px; border: none; cursor: pointer;
+      background: transparent; color: #e8eaed;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .12s ease;
+    }
+    .mb-group .mb-main:hover { background: rgba(255,255,255,.1); }
+    .mb-group .mb-main svg { width:22px; height:22px; pointer-events:none; }
+
+    .mb-group .mb-arr {
+      width: 20px; height: 48px; border: none; cursor: pointer;
+      background: transparent; color: #9aa0a6;
+      display: flex; align-items: center; justify-content: center;
+      border-left: 1px solid rgba(255,255,255,.1);
+      transition: background .12s ease, color .12s ease;
+    }
+    .mb-group .mb-arr:hover { background: rgba(255,255,255,.1); color: #e8eaed; }
+    .mb-group .mb-arr svg { width:12px; height:12px; pointer-events:none; }
+
+    /* Cuando apagado: fondo rojo */
+    .mb-group.off { background: #f28b82; }
+    .mb-group.off .mb-main { color: #202124; }
+    .mb-group.off .mb-main svg { stroke: #202124; }
+    .mb-group.off .mb-arr  { color: #202124; border-color: rgba(0,0,0,.15); }
+    .mb-group.off .mb-arr svg { stroke: #202124; }
+    .mb-group.off .mb-main:hover,
+    .mb-group.off .mb-arr:hover { background: rgba(0,0,0,.1); }
+
+    /* ---- Botón salir (rojo sólido) ---- */
+    .mb-end {
+      height: 48px; padding: 0 1.4rem; border-radius: 999px;
+      border: none; cursor: pointer;
+      background: #ea4335; color: #fff;
+      display: flex; align-items: center; justify-content: center; gap: .4rem;
+      font-size: .82rem; font-weight: 600;
+      transition: background .15s ease, transform .12s ease;
+      flex-shrink: 0;
+    }
+    .mb-end:hover { background: #d33426; transform: scale(1.04); }
+    .mb-end svg { width: 18px; height: 18px; pointer-events: none; }
+
+    /* ---- Tooltip ---- */
+    [data-tip] { position: relative; }
+    [data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 9px); left: 50%;
+      transform: translateX(-50%);
+      background: #3c4043; color: #e8eaed; border: 1px solid #5f6368;
+      font-size: .7rem; white-space: nowrap;
+      padding: .22rem .5rem; border-radius: 5px;
+      pointer-events: none; z-index: 200;
+    }
+
+    /* ---- Indicador mano ---- */
+    .mano-dot {
+      position: absolute; top: -3px; right: -3px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #fbbc04; border: 2px solid #202124;
+      font-size: .5rem; display: flex; align-items: center; justify-content: center;
+      color: #202124; font-weight: 800;
+    }
+
+    /* Responsive barra */
+    @media (max-width: 600px) {
+      .meet-bar { padding: 0 .6rem; gap: .35rem; }
+      .meet-left, .meet-right { min-width: auto; }
+      .meet-code { display: none; }
+      .mb        { width: 42px; height: 42px; }
+      .mb-group .mb-main { width: 42px; height: 42px; }
+      .mb-group .mb-arr  { width: 16px; height: 42px; }
+      .mb-end    { height: 42px; padding: 0 .9rem; font-size: .75rem; }
+    }
+
+    /* ======================================================
+       OVERLAY SALA CERRADA
+    ====================================================== */
+    .sala-cerrada-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.88);
+      display:flex; align-items:center; justify-content:center; z-index:9999;
+    }
+    .sala-cerrada-box {
+      background:var(--bg-700); border:1px solid var(--border);
+      border-radius:var(--radius-xl); padding:2rem;
+      text-align:center; max-width:360px; width:90%;
+    }
+
+    /* Badge creador */
+    #badge-creador { margin-right: .4rem; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="dashboard.html" style="color:var(--text-300);font-size:.8rem;display:flex;align-items:center;gap:.3rem">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Dashboard
+  </a>
+  <span class="navbar-brand" style="margin-left:.5rem">Señas V2</span>
+  <span id="nav-sala-codigo" class="sala-codigo" style="margin-left:.4rem"></span>
+  <div class="navbar-nav">
+    <span id="badge-creador" style="display:none" class="badge badge-purple">Creador</span>
+    <button class="btn btn-icon" title="Copiar código" onclick="copiarCodigo()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div class="sala-layout">
+
+  <!-- CÁMARA -->
+  <div class="panel-camara">
+    <div class="camara-titulo">
+      <span>Cámara</span>
+      <span id="cam-estado" class="badge badge-red">Apagada</span>
+    </div>
+    <div class="video-wrap">
+      <video id="video-local" autoplay muted playsinline></video>
+      <canvas id="canvas-overlay"></canvas>
+      <div class="cam-placeholder" id="cam-placeholder">
+        <div class="av-circulo" id="avatar-iniciales">?</div>
+        <div class="av-nombre"  id="avatar-nombre">Tu nombre</div>
+        <div class="av-estado">Cámara desactivada</div>
+      </div>
+    </div>
+    <div class="confianza-bar">
+      <div class="confianza-label">
+        <span>Confianza del gesto</span>
+        <span id="confianza-valor">0%</span>
+      </div>
+      <div class="progress" style="height:4px">
+        <div id="barra-confianza" class="progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div class="recono-info">
+      <div style="display:flex;gap:.75rem;align-items:flex-start">
+        <div class="letra-display" id="letra-display">—</div>
+        <div class="flex-1">
+          <div class="palabra-display" id="palabra-display"></div>
+          <div class="frase-display"   id="frase-display"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="panel-chat">
+    <div class="chat-header">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <div class="flex-1">
+        <div style="font-weight:600;font-size:.88rem" id="chat-titulo">Chat</div>
+        <div class="sala-codigo" id="chat-codigo-display"></div>
+      </div>
+      <span id="chat-participantes-count" class="text-muted text-sm"></span>
+    </div>
+    <div class="chat-mensajes" id="chat-mensajes">
+      <div class="msg-sistema">Conectando...</div>
+    </div>
+    <div class="subtitulos-live" id="subtitulos-live" style="display:none">
+      <div class="sub-nombre" id="sub-nombre"></div>
+      <div class="sub-frase"  id="sub-frase"></div>
+    </div>
+    <div class="chat-input-area">
+      <textarea id="chat-input" placeholder="Escribe un mensaje..." rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarTexto();}">
+      </textarea>
+      <button class="btn btn-primary btn-sm" onclick="enviarTexto()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PARTICIPANTES -->
+  <div class="panel-participantes">
+    <h4>Participantes</h4>
+    <div class="participantes-lista" id="participantes-lista">
+      <div class="part-item text-muted text-sm">Cargando...</div>
+    </div>
+    <div class="video-remoto-wrap">
+      <h4>Video remoto</h4>
+      <div id="videos-remotos">
+        <div class="text-muted text-xs" style="padding:.15rem 0">Sin video</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /sala-layout -->
+
+<!-- ======================================================
+     BARRA INFERIOR ESTILO GOOGLE MEET
+====================================================== -->
+<div class="meet-bar">
+
+  <!-- Izquierda: hora + código -->
+  <div class="meet-left">
+    <div class="meet-dot"></div>
+    <div>
+      <div class="meet-time" id="meet-hora">00:00</div>
+      <div class="meet-code" id="meet-code">—</div>
+    </div>
+  </div>
+
+  <!-- Centro: controles principales -->
+  <div class="meet-center">
+
+    <!-- MICRÓFONO (grupo con flecha) -->
+    <div class="mb-group off" id="grp-mic" data-tip="Micrófono">
+      <button class="mb-main" onclick="toggleMic()">
+        <!-- Icono mic apagado por defecto -->
+        <svg id="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="1" y1="1" x2="23" y2="23"/>
+          <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
+          <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
+          <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+      <button class="mb-arr" onclick="event.stopPropagation()" title="Opciones de audio">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+      </button>
+    </div>
+
+    <!-- CÁMARA (grupo con flecha → abre selector) -->
+    <div class="mb-group off" id="grp-cam" data-tip="Cámara">
+      <button class="mb-main" id="btn-cam-main" onclick="toggleCamara(event)">
+        <!-- Icono cámara apagada por defecto -->
+        <svg id="icon-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="1" y1="1" x2="23" y2="23"/>
+          <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34"/>
+          <circle cx="12" cy="13" r="3"/>
+        </svg>
+      </button>
+      <button class="mb-arr" onclick="abrirSelectorCamara(event)" title="Cambiar cámara">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+      </button>
+    </div>
+
+    <!-- LEVANTAR MANO -->
+    <button class="mb" id="btn-mano" data-tip="Levantar mano" onclick="toggleMano()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
+        <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/>
+        <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/>
+        <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+      </svg>
+    </button>
+
+    <!-- CONFIRMAR FRASE DE SEÑAS -->
+    <button class="mb" data-tip="Confirmar frase" onclick="finFrase()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+    </button>
+
+    <!-- LIMPIAR TEXTO -->
+    <button class="mb" data-tip="Limpiar" onclick="limpiarRecono()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+        <path d="M9 6V4h6v2"/>
+      </svg>
+    </button>
+
+    <!-- AUDIO TTS -->
+    <button class="mb on" id="btn-audio" data-tip="Audio" onclick="toggleAudio()">
+      <svg id="icon-audio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+      </svg>
+    </button>
+
+  </div><!-- /meet-center -->
+
+  <!-- Derecha: salir / cerrar -->
+  <div class="meet-right">
+    <!-- Salir (solo yo) -->
+    <button class="mb-end" data-tip="Salir" onclick="salirDeSala()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px">
+        <path d="M16 17l5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+      </svg>
+      Salir
+    </button>
+    <!-- Cerrar sala (solo creador) -->
+    <button class="mb off" id="btn-cerrar-sala" data-tip="Cerrar sala para todos"
+            style="display:none" onclick="cerrarSala()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.43 9.6a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 3.54 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.5 8.9"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </svg>
+    </button>
+  </div>
+
+</div><!-- /meet-bar -->
+
+<div id="toast-container"></div>
+<canvas id="canvas-captura" style="display:none" width="640" height="480"></canvas>
+
+<script src="js/app.js"></script>
+<script>
+  Auth.requerir();
+
+  const params  = new URLSearchParams(location.search);
+  const SALA_ID = params.get('sala');
+  if (!SALA_ID) window.location.href = 'dashboard.html';
+
+  const usuario = Auth.usuario();
+  document.getElementById('nav-sala-codigo').textContent     = SALA_ID;
+  document.getElementById('chat-codigo-display').textContent = SALA_ID;
+  document.getElementById('chat-titulo').textContent         = `Reunión ${SALA_ID}`;
+  document.getElementById('meet-code').textContent           = SALA_ID;
+  document.getElementById('avatar-iniciales').textContent    = iniciales(usuario.nombre);
+  document.getElementById('avatar-nombre').textContent       = usuario.nombre;
+
+  let camaraActiva  = false;
+  let micActivo     = false;
+  let audioActivo   = true;
+  let manoLevantada = false;
+  let salaWS        = null;
+  let capturador    = null;
+  let webrtc        = null;
+  let synth         = window.speechSynthesis;
+  let mensajesMap   = {};
+  let soyCreador    = false;
+
+  // Reloj
+  const _updateTime = () => {
+    document.getElementById('meet-hora').textContent =
+      new Date().toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
+  };
+  _updateTime(); setInterval(_updateTime, 1000);
+
+  // ---- Verificar creador ----
+  async function verificarSiEsCreador() {
+    try {
+      const res = await Api.get(`/reuniones/${SALA_ID}/info`);
+      soyCreador = res.es_creador;
+      if (soyCreador) {
+        document.getElementById('btn-cerrar-sala').style.display = '';
+        document.getElementById('badge-creador').style.display   = '';
+      }
+    } catch(e) {}
+  }
+
+  // ---- WebSocket ----
+  function conectarWS() {
+    salaWS = new SalaWS(SALA_ID, {
+      onConectado:     () => { toast('Conectado', 'success'); cargarHistorial(); },
+      onDesconectado:  () => toast('Reconectando...', 'info'),
+      onMensaje:       recibirMensaje,
+      onTraduccion:    recibirTraduccion,
+      onSistema:       recibirSistema,
+      onParticipantes: actualizarParticipantes,
+      onWebRTC:        (d) => webrtc?.manejarSeñal(d.de, d.señal),
+      onCorreccionIA:  actualizarIA,
+      onLimpiar:       (d) => { if (d.usuario_id !== usuario.id) limpiarSub(); },
+      onError:         () => toast('Error de conexión', 'error'),
+    });
+    salaWS.conectar();
+  }
+  conectarWS(); verificarSiEsCreador();
+
+  // ---- Historial ----
+  async function cargarHistorial() {
+    try {
+      const { mensajes } = await Api.get(`/reuniones/${SALA_ID}/mensajes`);
+      mensajes.forEach(m => addMsg({ mensaje_id:m.id, usuario_id:m.autor_id, nombre:m.autor,
+        texto:m.texto_original, texto_corregido:m.texto_corregido, timestamp:m.enviado_en }, false));
+      scrollEnd();
+    } catch(e) {}
+  }
+
+  // ---- Mensajes ----
+  function addMsg(d, scroll=true) {
+    const propio = d.usuario_id === usuario.id;
+    const div = document.createElement('div');
+    div.className = `mensaje-burbuja ${propio?'propio':''}`;
+    div.id = `msg-${d.mensaje_id}`;
+    const txt = d.texto_corregido || d.texto;
+    div.innerHTML = `
+      ${!propio?`<div class="avatar" style="width:26px;height:26px;font-size:.6rem">${iniciales(d.nombre)}</div>`:''}
+      <div class="msg-contenido">
+        <div class="msg-autor">${d.nombre}</div>
+        <div class="msg-texto">${txt}</div>
+        ${d.texto_corregido&&d.texto_corregido!==d.texto?`<div class="msg-ia">✨ Corregido por IA</div>`:''}
+        <div class="msg-hora">${formatHora(d.timestamp||new Date().toISOString())}</div>
+      </div>`;
+    document.getElementById('chat-mensajes').appendChild(div);
+    mensajesMap[d.mensaje_id] = div;
+    if (scroll) scrollEnd();
+    if (audioActivo && !propio && d.texto_corregido) hablar(d.texto_corregido);
+  }
+
+  function recibirMensaje(d) { limpiarSub(); addMsg(d); }
+
+  function actualizarIA(d) {
+    const el = mensajesMap[d.mensaje_id]; if (!el) return;
+    const t = el.querySelector('.msg-texto'); if (t) t.textContent = d.texto_corregido;
+    if (!el.querySelector('.msg-ia')) {
+      const n=document.createElement('div'); n.className='msg-ia'; n.textContent='✨ Corregido por IA';
+      el.querySelector('.msg-contenido').insertBefore(n, el.querySelector('.msg-hora'));
+    }
+  }
+
+  function recibirSistema(d) {
+    if (d.mensaje?.includes('cerró la sala') && !soyCreador) { mostrarCerrada(); return; }
+    const c = document.getElementById('chat-mensajes');
+    const div = document.createElement('div');
+    div.className='msg-sistema'; div.textContent=d.mensaje;
+    c.appendChild(div); scrollEnd();
+  }
+
+  function scrollEnd() { const c=document.getElementById('chat-mensajes'); c.scrollTop=c.scrollHeight; }
+
+  // ---- Subtítulos ----
+  let subTimer=null;
+  function recibirTraduccion(d) {
+    if (!d.frase_completa&&!d.palabra_actual) return;
+    document.getElementById('subtitulos-live').style.display='';
+    document.getElementById('sub-nombre').textContent=d.nombre+' escribe:';
+    document.getElementById('sub-frase').textContent=d.frase_completa||d.palabra_actual||d.letra_actual||'…';
+    clearTimeout(subTimer); subTimer=setTimeout(limpiarSub, 4000);
+  }
+  function limpiarSub() { document.getElementById('subtitulos-live').style.display='none'; }
+
+  // ---- Participantes ----
+  function actualizarParticipantes(d) {
+    const parts=d.participantes||[];
+    document.getElementById('chat-participantes-count').textContent=
+      `${parts.length} participante${parts.length!==1?'s':''}`;
+    document.getElementById('participantes-lista').innerHTML=
+      parts.map(p=>`
+        <div class="part-item">
+          <div class="avatar" style="width:24px;height:24px;font-size:.58rem">${iniciales(p.nombre)}</div>
+          <div class="flex-1"><div style="font-size:.8rem;font-weight:500">${p.nombre}</div></div>
+          <div class="part-estado"></div>
+        </div>`).join('')||'<div class="part-item text-muted text-sm">Sin participantes</div>';
+  }
+
+  // ---- CÁMARA ----
+  // SVGs para los dos estados
+  const SVG_CAM_ON  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`;
+  const SVG_CAM_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34"/><circle cx="12" cy="13" r="3"/></svg>`;
+  const SVG_MIC_ON  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
+  const SVG_MIC_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
+  const SVG_AUD_ON  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`;
+  const SVG_AUD_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
+
+  async function toggleCamara(event) {
+    if (!camaraActiva) {
+      const videoEl  = document.getElementById('video-local');
+      const canvasEl = document.getElementById('canvas-captura');
+      const anchor   = document.getElementById('grp-cam');
+
+      capturador = new CapturadorCamara(videoEl, canvasEl, (b64) => salaWS?.enviarFrame(b64), 12);
+      const ok   = await capturador.iniciar(anchor);
+
+      if (ok) {
+        camaraActiva = true;
+        videoEl.style.display = 'block';
+        document.getElementById('cam-placeholder').style.display = 'none';
+        document.getElementById('cam-estado').className          = 'badge badge-green';
+        document.getElementById('cam-estado').textContent        = 'Activa';
+        document.getElementById('btn-cam-main').innerHTML        = SVG_CAM_ON;
+        document.getElementById('grp-cam').classList.remove('off');
+      } else {
+        capturador = null;
+      }
+    } else {
+      capturador?.detener(); capturador=null; camaraActiva=false;
+      const videoEl = document.getElementById('video-local');
+      videoEl.style.display = 'none';
+      document.getElementById('cam-placeholder').style.display = 'flex';
+      document.getElementById('cam-estado').className          = 'badge badge-red';
+      document.getElementById('cam-estado').textContent        = 'Apagada';
+      document.getElementById('btn-cam-main').innerHTML        = SVG_CAM_OFF;
+      document.getElementById('grp-cam').classList.add('off');
+    }
+  }
+
+  async function abrirSelectorCamara(event) {
+    event.stopPropagation();
+    const anchor = document.getElementById('grp-cam');
+    if (!capturador) { await toggleCamara(event); return; }
+    await capturador.switchCamara(anchor);
+  }
+
+  // ---- Micrófono ----
+  function toggleMic() {
+    micActivo = !micActivo;
+    const grp = document.getElementById('grp-mic');
+    grp.querySelector('.mb-main').innerHTML = micActivo ? SVG_MIC_ON : SVG_MIC_OFF;
+    grp.classList.toggle('off', !micActivo);
+    toast(micActivo ? 'Micrófono activado' : 'Micrófono silenciado', 'info');
+  }
+
+  // ---- Audio TTS ----
+  function toggleAudio() {
+    audioActivo = !audioActivo;
+    const btn = document.getElementById('btn-audio');
+    btn.innerHTML = audioActivo ? SVG_AUD_ON : SVG_AUD_OFF;
+    btn.classList.toggle('on',  audioActivo);
+    btn.classList.toggle('off', !audioActivo);
+  }
+
+  // ---- Levantar mano ----
+  function toggleMano() {
+    manoLevantada = !manoLevantada;
+    const btn = document.getElementById('btn-mano');
+    btn.classList.toggle('on', manoLevantada);
+    if (manoLevantada) {
+      btn.insertAdjacentHTML('beforeend', '<div class="mano-dot">!</div>');
+      toast('Mano levantada — todos lo ven', 'info');
+    } else {
+      btn.querySelector('.mano-dot')?.remove();
+    }
+  }
+
+  // ---- Controles señas ----
+  function finFrase()      { salaWS?.finFrase(); }
+  function limpiarRecono() {
+    salaWS?.limpiar();
+    document.getElementById('letra-display').textContent   = '—';
+    document.getElementById('palabra-display').textContent = '';
+    document.getElementById('frase-display').textContent   = '';
+    document.getElementById('barra-confianza').style.width = '0%';
+    document.getElementById('confianza-valor').textContent = '0%';
+  }
+
+  function copiarCodigo() { navigator.clipboard.writeText(SALA_ID); toast('Código copiado','success'); }
+
+  function actualizarReconoUI(letra, palabra, frase, confianza) {
+    document.getElementById('letra-display').textContent   = letra||'—';
+    document.getElementById('palabra-display').textContent = palabra||'';
+    document.getElementById('frase-display').textContent   = frase||'';
+    const pct=Math.round((confianza||0)*100);
+    document.getElementById('confianza-valor').textContent = pct+'%';
+    const b=document.getElementById('barra-confianza');
+    b.style.width=pct+'%';
+    b.className=`progress-bar ${pct>70?'green':pct>40?'yellow':'red'}`;
+  }
+
+  // ---- Salir / Cerrar ----
+  function _limpiar() {
+    capturador?.detener(); webrtc?.colgar(); synth?.cancel();
+    const v=document.getElementById('video-local');
+    if (v?.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;}
+    salaWS?.desconectar();
+  }
+  function salirDeSala() { _limpiar(); window.location.href='dashboard.html'; }
+  async function cerrarSala() {
+    if (!soyCreador){toast('Solo el creador puede cerrar la sala','error');return;}
+    if (!confirm('¿Cerrar la sala para TODOS los participantes?')) return;
+    try { await Api.delete(`/reuniones/${SALA_ID}/cerrar`); toast('Sala cerrada','success'); }
+    catch(e){toast(e.message,'error');return;}
+    setTimeout(()=>{_limpiar();window.location.href='dashboard.html';},700);
+  }
+  function mostrarCerrada() {
+    _limpiar();
+    const o=document.createElement('div'); o.className='sala-cerrada-overlay';
+    o.innerHTML=`<div class="sala-cerrada-box">
+      <h2 style="margin-bottom:.4rem">Sala cerrada</h2>
+      <p class="text-muted" style="margin-bottom:1.25rem;font-size:.85rem">El creador cerró esta sala.</p>
+      <button class="btn btn-primary btn-full" onclick="window.location.href='dashboard.html'">Volver al dashboard</button>
+    </div>`;
+    document.body.appendChild(o);
+  }
+
+  // ---- Enviar texto ----
+  function enviarTexto() {
+    const i=document.getElementById('chat-input'); const t=i.value.trim();
+    if (!t) return; salaWS?.enviarTexto(t); i.value='';
+  }
+
+  // ---- Video remoto ----
+  function agregarVideoRemoto(uid,stream) {
+    const c=document.getElementById('videos-remotos');
+    c.querySelector('.text-muted')?.remove();
+    const div=document.createElement('div'); div.className='video-peer'; div.id=`vp-${uid}`;
+    div.innerHTML=`<div class="video-peer-avatar" id="vpa-${uid}"><div class="avc">?</div><div class="avn">U${uid}</div></div><video autoplay playsinline style="display:none"></video><div class="video-peer-label">U${uid}</div>`;
+    const vid=div.querySelector('video'); vid.srcObject=stream;
+    vid.onloadeddata=()=>{vid.style.display='block';document.getElementById(`vpa-${uid}`)?.remove();};
+    c.appendChild(div);
+  }
+  document.addEventListener('webrtc:stream',(e)=>agregarVideoRemoto(e.detail.usuarioId,e.detail.stream));
+
+  // ---- Voz ----
+  function hablar(txt) {
+    if (!synth||!audioActivo) return;
+    synth.cancel(); const u=new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate=1.0; synth.speak(u);
+  }
+
+  window.addEventListener('beforeunload', _limpiar);
+</script>
+</body>
+</html>

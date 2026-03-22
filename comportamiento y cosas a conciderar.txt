@@ -1,0 +1,29 @@
+bien refactorizemos la idea principal te dare la idea: 1. se propone un sistema cuyo funcionamiento es el siguinte: dos actores el sordomudo que hablara en señas y le llega al receptor una persona que no sabe lenguaje de señas a el llegara como subtitulos, de lo que se dijo el sordomudo y de la persona le llegara subtitulos posibilitando la conversación en tiempo real. 
+
+la interfaz que quiero dasarrolar es que sea multiple conversacion. dividiendo la interfaz o ventana en 3: ventana1. sordomudo, ventana2(la traduccion como si fuera una conversacion tipo whatsapp al estilo de conversaciones mostrando quien de los usuarios lo dijo ambos sordomudos y personas no sordomudas),ventana3 multidividida para los demas usuarios.
+
+pero para tener registro de conversaciones o saber quienes lo dicen, crear una ventana de login basica. de user por google. lo cual luego llegara a una ventana con una interfaz de opciones como ser historial(lo que se hablo en conversaciones pasadas tambien para borrarlas o guardarlas), reunion(generar una llamada o unirse a una llamada), posibilidad de crear mas opciones.
+aun quiero que se desarrolle la interfaz de reconocimiento de gestos con la misma tecnologia ya usada de python ya que la concidero bastante buena y no muy pesada. 
+
+Primero dime si seria posible incorporar lo que queremos como un estension de chrome para las llamadas de meet o seria mejor crear mi propia interfaz de llamada web.? 
+
+ para iniciar el programa
+ara apagar, en la ventana de PowerShell donde corre el servidor presiona:
+
+
+Ctrl + C
+
+
+
+Eso detiene el servidor. Listo.
+
+Para volver a prenderlo la próxima vez, abre PowerShell y ejecuta estos 2 comandos:
+
+
+powershellcd C:\xampp\htdocs\files\backend
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+
+
+
+Y listo, el sistema vuelve a estar en http://localhost:8000
