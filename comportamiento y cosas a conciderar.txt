@@ -19,11 +19,19 @@ Eso detiene el servidor. Listo.
 
 Para volver a prenderlo la próxima vez, abre PowerShell y ejecuta estos 2 comandos:
 
-
-powershellcd C:\xampp\htdocs\files\backend
+// asi entra leo al sistema 
+powershellcd:
+cd C:\xampp\htdocs\files\backend
 python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-
-
-
-
 Y listo, el sistema vuelve a estar en http://localhost:8000
+
+// asi entra miguel al sistema 
+cd C:\Users\PC\Downloads\senas_proyecto
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+Y listo, el sistema vuelve a estar en http://localhost:8000
+
+
+
+git add .
+git commit -m "describe qué hiciste"
+git push origin main

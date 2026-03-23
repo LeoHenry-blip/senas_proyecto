@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test de Reconocimiento</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body {
+      background: var(--bg-900);
+      color: var(--text-100);
+      min-height: 100vh;
+      padding: 1.75rem 2rem;
+      overflow-y: auto;
+    }
+
+    .test-layout {
+      display: grid;
+      grid-template-columns: 480px 1fr;
+      gap: 1.5rem;
+    }
+
+    .test-camara-wrap {
+      position: relative;
+      background: #000;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      border: 2px solid var(--border);
+    }
+    .test-camara-wrap video  { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+    .test-camara-wrap canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+
+    .test-letra-display {
+      font-size: 6rem; font-weight: 900; line-height: 1;
+      color: var(--accent); text-align: center;
+      text-shadow: 0 0 40px rgba(79,142,247,.35);
+      min-height: 6rem;
+      font-family: var(--font-mono);
+    }
+
+    .test-conf-label {
+      display: flex; justify-content: space-between;
+      font-size: .8rem; color: var(--text-300); margin-bottom: .4rem;
+    }
+
+    .test-candidatos { display: flex; flex-direction: column; gap: .4rem; }
+    .test-cand-item {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .45rem .75rem;
+      background: var(--bg-700);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .test-cand-nombre { font-family: var(--font-mono); font-weight: 700; font-size: 1rem; min-width: 44px; }
+    .test-cand-bar-wrap { flex:1; background:var(--bg-900); border-radius:999px; height:8px; overflow:hidden; }
+    .test-cand-bar { height:100%; border-radius:999px; transition:width .2s ease; }
+    .test-cand-pct { font-size:.78rem; color:var(--text-300); min-width:38px; text-align:right; }
+
+    .test-historial { display:flex; flex-wrap:wrap; gap:.3rem; min-height:36px; }
+    .test-hist-chip {
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: 6px; padding: .2rem .55rem;
+      font-family: var(--font-mono); font-size: .85rem; color: var(--text-200);
+      animation: popIn .15s ease;
+    }
+    @keyframes popIn { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+
+    .test-mano-indicator {
+      text-align: center; font-size: .82rem;
+      color: var(--text-300); margin-top: .4rem;
+      transition: color .3s;
+    }
+    .test-mano-indicator.detectada { color: var(--success); }
+
+    .test-estado-badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .3rem .75rem; border-radius: 999px;
+      font-size: .78rem; font-weight: 600;
+      background: rgba(239,68,68,.12); color: var(--danger);
+      border: 1px solid rgba(239,68,68,.25);
+    }
+    .test-estado-badge.activo {
+      background: rgba(34,197,94,.12); color: var(--success);
+      border-color: rgba(34,197,94,.25);
+    }
+    .test-dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+
+    .test-log {
+      background: var(--bg-900); border-radius: var(--radius-md);
+      padding: .75rem; font-family: var(--font-mono);
+      font-size: .73rem; color: var(--text-300);
+      height: 110px; overflow-y: auto;
+      border: 1px solid var(--border);
+    }
+    .test-log .log-ok   { color: var(--success); }
+    .test-log .log-warn { color: #f59e0b; }
+    .test-log .log-err  { color: var(--danger); }
+
+    .stat-mini {
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: .6rem .75rem;
+    }
+    .stat-mini-label { font-size:.72rem; color:var(--text-300); text-transform:uppercase; letter-spacing:.05em; }
+    .stat-mini-value { font-size:1.4rem; font-weight:700; font-family:var(--font-mono); margin-top:.1rem; }
+  </style>
+</head>
+<body>
+
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem">
+    <h2>🧪 Test de reconocimiento</h2>
+    <div style="display:flex; align-items:center; gap:.75rem">
+      <span class="test-estado-badge" id="test-estado-badge">
+        <span class="test-dot"></span> Cámara apagada
+      </span>
+      <span style="font-size:.78rem; color:var(--text-300); font-family:var(--font-mono)" id="fps-display"></span>
+    </div>
+  </div>
+
+  <div class="test-layout">
+
+    <!-- COLUMNA IZQUIERDA: cámara -->
+    <div>
+      <div class="test-camara-wrap">
+        <video id="test-video" autoplay muted playsinline></video>
+        <canvas id="test-canvas"></canvas>
+      </div>
+      <div class="test-mano-indicator" id="test-mano-indicator">Sin mano detectada</div>
+
+      <div style="display:flex; gap:.5rem; margin-top:.75rem; flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="iniciarCamara()">📷 Iniciar cámara</button>
+        <button class="btn btn-danger btn-sm"  onclick="detenerCamara()">⏹ Detener</button>
+        <button class="btn btn-ghost btn-sm"   onclick="limpiarTodo()">🗑 Limpiar</button>
+        <button class="btn btn-ghost btn-sm"   onclick="cargarGestos()">🔄 Recargar gestos</button>
+      </div>
+
+      <div class="card card-sm" style="margin-top:1rem">
+        <h4 style="margin-bottom:.6rem;font-size:.8rem;color:var(--text-300);text-transform:uppercase;letter-spacing:.06em">
+          Log del sistema
+        </h4>
+        <div class="test-log" id="test-log"></div>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: resultados -->
+    <div style="display:flex; flex-direction:column; gap:1rem">
+
+      <!-- Gesto actual -->
+      <div class="card card-sm">
+        <h4 style="margin-bottom:.75rem">Gesto detectado</h4>
+        <div class="test-letra-display" id="letra-display">—</div>
+        <div style="margin-top:.85rem">
+          <div class="test-conf-label">
+            <span>Confianza</span>
+            <span id="conf-valor">0%</span>
+          </div>
+          <div class="progress" style="height:10px">
+            <div class="progress-bar" id="conf-bar"
+                 style="width:0%; transition:width .15s ease, background .3s ease"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top 3 candidatos -->
+      <div class="card card-sm">
+        <h4 style="margin-bottom:.75rem">Top 3 candidatos</h4>
+        <div class="test-candidatos" id="candidatos">
+          <div class="text-muted text-sm">Inicia la cámara para ver candidatos</div>
+        </div>
+      </div>
+
+      <!-- Historial -->
+      <div class="card card-sm">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.6rem">
+          <h4>Historial de detecciones</h4>
+          <span class="text-xs text-muted">últimas 20</span>
+        </div>
+        <div class="test-historial" id="historial"></div>
+      </div>
+
+      <!-- Stats de sesión -->
+      <div class="card card-sm">
+        <h4 style="margin-bottom:.75rem">Estadísticas de sesión</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6rem">
+          <div class="stat-mini">
+            <div class="stat-mini-label">Detecciones</div>
+            <div class="stat-mini-value" id="stat-detecciones" style="color:var(--accent)">0</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">Confianza prom.</div>
+            <div class="stat-mini-value" id="stat-confianza" style="color:var(--success)">—</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">Gestos en BD</div>
+            <div class="stat-mini-value" id="stat-gestos" style="color:var(--text-100)">—</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">Última letra</div>
+            <div class="stat-mini-value" id="stat-ultima" style="color:#f59e0b">—</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script src="../js/app.js"></script>
+<script>
+  // ── Estado ────────────────────────────────────────────────
+  let stream        = null;
+  let frameTimer    = null;
+  let fpsTimer      = null;
+  let fpsCount      = 0;
+  let gestosDB      = null;
+  let ultimaLetra   = '';
+  let historialArr  = [];
+  let totalDet      = 0;
+  let confAcc       = 0;
+
+  const video  = document.getElementById('test-video');
+  const canvas = document.getElementById('test-canvas');
+  const ctx    = canvas.getContext('2d');
+
+  // ── Log ──────────────────────────────────────────────────
+  function log(msg, tipo = 'info') {
+    const el   = document.getElementById('test-log');
+    const line = document.createElement('div');
+    line.className = tipo === 'ok' ? 'log-ok' : tipo === 'error' ? 'log-err' : tipo === 'warn' ? 'log-warn' : '';
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+    while (el.children.length > 60) el.removeChild(el.firstChild);
+  }
+
+  // ── Carga de gestos ──────────────────────────────────────
+  async function cargarGestos() {
+    try {
+      const { gestos } = await Api.get('/admin/gestos');
+      gestosDB = gestos;
+      document.getElementById('stat-gestos').textContent = gestos.length;
+      log(`${gestos.length} gestos cargados`, 'ok');
+    } catch(e) {
+      log('Error cargando gestos: ' + e.message, 'error');
+    }
+  }
+
+  // ── Cámara ───────────────────────────────────────────────
+  async function iniciarCamara() {
+    if (stream) return;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { width:640, height:480 }, audio:false
+      });
+      video.srcObject = stream;
+      await video.play();
+      canvas.width = 640; canvas.height = 480;
+
+      setBadge(true);
+      log('Cámara iniciada', 'ok');
+
+      frameTimer = setInterval(capturarYEnviar, 1000 / 15);
+      fpsTimer   = setInterval(() => {
+        document.getElementById('fps-display').textContent = fpsCount + ' fps';
+        fpsCount = 0;
+      }, 1000);
+
+      if (!gestosDB) await cargarGestos();
+    } catch(e) {
+      log('Error de cámara: ' + e.message, 'error');
+    }
+  }
+
+  function detenerCamara() {
+    clearInterval(frameTimer);
+    clearInterval(fpsTimer);
+    stream?.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+    stream = null;
+    setBadge(false);
+    log('Cámara detenida', 'warn');
+  }
+
+  function setBadge(activo) {
+    const b = document.getElementById('test-estado-badge');
+    b.innerHTML = `<span class="test-dot"></span> ${activo ? 'Cámara activa' : 'Cámara apagada'}`;
+    b.classList.toggle('activo', activo);
+  }
+
+  // ── Captura y envío ──────────────────────────────────────
+  async function capturarYEnviar() {
+    if (!video.videoWidth) return;
+    fpsCount++;
+
+    ctx.save(); ctx.scale(-1,1);
+    ctx.drawImage(video, -640, 0, 640, 480);
+    ctx.restore();
+
+    const b64 = canvas.toDataURL('image/jpeg', 0.75).split(',')[1];
+
+    try {
+      const res = await fetch('/api/admin/extraer-landmarks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Auth.token()}`
+        },
+        body: JSON.stringify({ frame_b64: b64 })
+      });
+      const data = await res.json();
+      const ind  = document.getElementById('test-mano-indicator');
+
+      if (data.landmarks) {
+        ind.textContent = '✋ Mano detectada';
+        ind.className   = 'test-mano-indicator detectada';
+        buscarGesto(data.landmarks);
+      } else {
+        ind.textContent = 'Sin mano detectada';
+        ind.className   = 'test-mano-indicator';
+        limpiarDeteccion();
+      }
+    } catch(e) {
+      log('Error al enviar frame: ' + e.message, 'error');
+    }
+  }
+
+  // ── Comparación de gestos ────────────────────────────────
+  function buscarGesto(landmarks) {
+    if (!gestosDB?.length) { cargarGestos(); return; }
+
+    const umbral     = 0.5;
+    const resultados = gestosDB.map(g => {
+      const vec = g.landmarks;
+      if (!vec || vec.length !== 63) return { nombre: g.nombre, tipo: g.tipo, dist: 999 };
+      let suma = 0;
+      for (let i = 0; i < 63; i++) {
+        const d = (landmarks[i] || 0) - (vec[i] || 0);
+        suma += d * d;
+      }
+      return { nombre: g.nombre, tipo: g.tipo, dist: Math.sqrt(suma) };
+    });
+
+    resultados.sort((a, b) => a.dist - b.dist);
+    const mejor     = resultados[0];
+    const confianza = Math.max(0, Math.min(1, 1 - (mejor.dist / umbral)));
+
+    actualizarUI(mejor.nombre, confianza, resultados.slice(0, 3), umbral);
+  }
+
+  // ── UI ───────────────────────────────────────────────────
+  function actualizarUI(nombre, confianza, top3, umbral) {
+    const pct = Math.round(confianza * 100);
+
+    document.getElementById('letra-display').textContent = nombre || '?';
+    document.getElementById('conf-valor').textContent    = pct + '%';
+
+    const bar = document.getElementById('conf-bar');
+    bar.style.width      = pct + '%';
+    bar.style.background = pct > 70 ? 'var(--success)' : pct > 40 ? '#f59e0b' : 'var(--danger)';
+
+    if (nombre !== ultimaLetra && confianza > 0.5) {
+      ultimaLetra = nombre;
+      historialArr.push(nombre);
+      if (historialArr.length > 20) historialArr.shift();
+      totalDet++; confAcc += confianza;
+
+      document.getElementById('stat-detecciones').textContent = totalDet;
+      document.getElementById('stat-confianza').textContent   = Math.round(confAcc / totalDet * 100) + '%';
+      document.getElementById('stat-ultima').textContent      = nombre;
+      document.getElementById('historial').innerHTML =
+        historialArr.map(l => `<span class="test-hist-chip">${l}</span>`).join('');
+
+      log(`Detectado: "${nombre}" (${pct}%)`, confianza > 0.7 ? 'ok' : 'warn');
+    }
+
+    const colores = ['var(--accent)', 'var(--success)', 'var(--text-300)'];
+    document.getElementById('candidatos').innerHTML = top3.map((c, i) => {
+      const conf  = Math.max(0, Math.round((1 - c.dist / umbral) * 100));
+      const color = colores[i] || colores[2];
+      return `
+        <div class="test-cand-item">
+          <div class="test-cand-nombre" style="color:${color}">${c.nombre}</div>
+          <div class="test-cand-bar-wrap">
+            <div class="test-cand-bar" style="width:${conf}%; background:${color}"></div>
+          </div>
+          <div class="test-cand-pct">${conf}%</div>
+          <div style="font-size:.72rem;color:var(--text-300);min-width:36px">${c.tipo || ''}</div>
+        </div>`;
+    }).join('');
+  }
+
+  function limpiarDeteccion() {
+    document.getElementById('letra-display').textContent = '—';
+    document.getElementById('conf-valor').textContent    = '0%';
+    document.getElementById('conf-bar').style.width      = '0%';
+  }
+
+  function limpiarTodo() {
+    historialArr = []; ultimaLetra = ''; totalDet = 0; confAcc = 0;
+    limpiarDeteccion();
+    document.getElementById('historial').innerHTML        = '';
+    document.getElementById('candidatos').innerHTML       = '<div class="text-muted text-sm">Sin detecciones</div>';
+    document.getElementById('stat-detecciones').textContent = '0';
+    document.getElementById('stat-confianza').textContent   = '—';
+    document.getElementById('stat-ultima').textContent      = '—';
+    log('Sesión limpiada', 'warn');
+  }
+
+  // ── Limpiar cámara al salir de la página ─────────────────
+  window.addEventListener('beforeunload', detenerCamara);
+  // También cuando el iframe padre carga otra página:
+  window.addEventListener('pagehide', detenerCamara);
+
+  // ── Auto-cargar gestos al abrir ──────────────────────────
+  cargarGestos();
+</script>
+</body>
+</html>

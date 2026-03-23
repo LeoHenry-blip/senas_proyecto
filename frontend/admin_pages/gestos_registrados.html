@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestos Registrados</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body {
+      background: var(--bg-900); color: var(--text-100);
+      min-height: 100vh; padding: 1.75rem 2rem; overflow-y: auto;
+    }
+
+    .toolbar {
+      display: flex; align-items: center; gap: .75rem;
+      margin-bottom: 1.25rem; flex-wrap: wrap;
+    }
+    .toolbar-spacer { flex: 1; }
+
+    .search-input {
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: .45rem .75rem;
+      color: var(--text-100); font-size: .85rem;
+      outline: none; width: 220px;
+      transition: border-color .15s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text-300); }
+
+    .filter-btn {
+      padding: .35rem .75rem; border-radius: var(--radius-md);
+      border: 1px solid var(--border); background: var(--bg-700);
+      color: var(--text-300); font-size: .8rem; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+    }
+    .filter-btn:hover  { background: var(--bg-600); color: var(--text-100); }
+    .filter-btn.active { background: rgba(79,142,247,.15); border-color: var(--accent); color: var(--accent); }
+
+    .gestos-lista { display: flex; flex-direction: column; gap: .5rem; }
+
+    .gesto-item {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .7rem 1rem;
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      transition: background .15s;
+      animation: fadeIn .2s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+    .gesto-item:hover { background: var(--bg-600); }
+
+    .gesto-nombre {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: 1.05rem; min-width: 70px; color: var(--text-100);
+    }
+    .gesto-desc  { flex: 1; font-size: .83rem; color: var(--text-300); }
+    .gesto-meta  { font-size: .75rem; color: var(--text-400); text-align: right; line-height: 1.5; }
+
+    .empty-state {
+      text-align: center; padding: 3rem 1rem;
+      color: var(--text-300); font-size: .9rem;
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: .75rem; }
+
+    .resumen-badges {
+      display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.25rem;
+    }
+    .resumen-badge {
+      display: flex; align-items: center; gap: .4rem;
+      padding: .35rem .75rem; border-radius: var(--radius-md);
+      font-size: .8rem; font-weight: 600; border: 1px solid var(--border);
+      background: var(--bg-700);
+    }
+  </style>
+</head>
+<body>
+
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem">
+  <h2>📋 Gestos registrados</h2>
+</div>
+
+<!-- Resumen -->
+<div class="resumen-badges" id="resumen-badges">
+  <div class="resumen-badge">⏳ Cargando...</div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <input class="search-input" id="search-input" type="text"
+         placeholder="🔍 Buscar gesto..."
+         oninput="filtrar()">
+
+  <div style="display:flex; gap:.4rem">
+    <button class="filter-btn active" data-tipo="todos" onclick="setFiltro(this,'todos')">Todos</button>
+    <button class="filter-btn" data-tipo="letter" onclick="setFiltro(this,'letter')">✋ Letras</button>
+    <button class="filter-btn" data-tipo="word"   onclick="setFiltro(this,'word')">🤟 Palabras</button>
+  </div>
+
+  <div class="toolbar-spacer"></div>
+
+  <button class="btn btn-ghost btn-sm" onclick="exportarJSON()">⬇️ Exportar JSON</button>
+  <button class="btn btn-primary btn-sm" onclick="cargarGestos()">🔄 Actualizar</button>
+</div>
+
+<!-- Lista -->
+<div class="gestos-lista" id="gestos-lista">
+  <div class="empty-state"><div class="empty-icon">⏳</div>Cargando gestos...</div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+  let todosLosGestos = [];
+  let filtroTipo     = 'todos';
+
+  async function cargarGestos() {
+    document.getElementById('gestos-lista').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⏳</div>Cargando...</div>';
+    try {
+      const { gestos } = await Api.get('/admin/gestos');
+      todosLosGestos = gestos;
+      actualizarResumen(gestos);
+      filtrar();
+    } catch(e) {
+      document.getElementById('gestos-lista').innerHTML =
+        `<div class="empty-state"><div class="empty-icon">❌</div>Error: ${e.message}</div>`;
+    }
+  }
+
+  function actualizarResumen(gestos) {
+    const letras   = gestos.filter(g => g.tipo === 'letter').length;
+    const palabras = gestos.filter(g => g.tipo === 'word').length;
+    document.getElementById('resumen-badges').innerHTML = `
+      <div class="resumen-badge" style="color:var(--text-100)">
+        📦 <strong>${gestos.length}</strong> total
+      </div>
+      <div class="resumen-badge" style="color:var(--accent)">
+        ✋ <strong>${letras}</strong> letras
+      </div>
+      <div class="resumen-badge" style="color:var(--success)">
+        🤟 <strong>${palabras}</strong> palabras
+      </div>
+    `;
+  }
+
+  function setFiltro(el, tipo) {
+    filtroTipo = tipo;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    filtrar();
+  }
+
+  function filtrar() {
+    const q    = document.getElementById('search-input').value.trim().toUpperCase();
+    const list = todosLosGestos.filter(g => {
+      const matchTipo = filtroTipo === 'todos' || g.tipo === filtroTipo;
+      const matchQ    = !q || g.nombre.includes(q) || (g.descripcion || '').toUpperCase().includes(q);
+      return matchTipo && matchQ;
+    });
+    renderLista(list);
+  }
+
+  function renderLista(gestos) {
+    const contenedor = document.getElementById('gestos-lista');
+    if (!gestos.length) {
+      contenedor.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🔍</div>
+          No hay gestos que coincidan con el filtro
+        </div>`;
+      return;
+    }
+
+    contenedor.innerHTML = gestos.map(g => `
+      <div class="gesto-item" id="item-${g.nombre}">
+        <div class="gesto-nombre">${g.nombre}</div>
+        <span class="badge ${g.tipo==='letter'?'badge-blue':'badge-green'}" style="min-width:60px;text-align:center">
+          ${g.tipo === 'letter' ? '✋ letra' : '🤟 palabra'}
+        </span>
+        <div class="gesto-desc">${g.descripcion || '—'}</div>
+        <div class="gesto-meta">
+          ${g.muestras_usadas} muestras<br>
+          ${g.creado_por_nombre || 'Sistema'}
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="eliminarGesto('${g.nombre}')">✕ Eliminar</button>
+      </div>
+    `).join('');
+  }
+
+  async function eliminarGesto(nombre) {
+    if (!confirm(`¿Eliminar el gesto "${nombre}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      await Api.delete(`/admin/gestos/${nombre}`);
+      toast(`Gesto "${nombre}" eliminado`, 'success');
+      // Quitar de la lista local sin recargar todo
+      todosLosGestos = todosLosGestos.filter(g => g.nombre !== nombre);
+      actualizarResumen(todosLosGestos);
+      filtrar();
+    } catch(e) { toast(e.message, 'error'); }
+  }
+
+  async function exportarJSON() {
+    try {
+      await Api.post('/admin/gestos/exportar-json', {});
+      toast('Gestos exportados a gestos.json', 'success');
+    } catch(e) { toast(e.message, 'error'); }
+  }
+
+  // Cargar al iniciar
+  cargarGestos();
+</script>
+</body>
+</html>

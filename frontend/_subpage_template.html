@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><!-- NOMBRE DE LA SECCIÓN --></title>
+  <!--
+    RUTA DE ASSETS: las sub-páginas viven en admin_pages/
+    Por eso los paths suben un nivel con ../
+  -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    /*
+      Estilos propios de esta sub-página.
+      NO necesitan navbar ni sidebar: los hereda del admin.html padre.
+    */
+    body {
+      /* Fondo igual al admin */
+      background: var(--bg-900);
+      color: var(--text-100);
+      min-height: 100vh;
+      /* Padding para que el contenido no quede pegado al borde */
+      padding: 1.75rem 2rem;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CONTENIDO DE LA SECCIÓN AQUÍ -->
+  <h2 style="margin-bottom:1.5rem">🏷️ Título de la sección</h2>
+
+  <p class="text-muted">Contenido...</p>
+
+</body>
+<script src="../js/app.js"></script>
+<script>
+  /*
+    Las sub-páginas NO hacen Auth.requerir() — el padre ya lo hizo.
+
+    Para navegar a otra sección desde aquí:
+      window.parent.adminNavegar('estadisticas')
+
+    Para acceder a la API (token del padre):
+      Api.get('/admin/algo')   — funciona igual, app.js ya tiene el token
+  */
+</script>
+</html>

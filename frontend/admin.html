@@ -5,835 +5,203 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Señas V2 — Panel Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="../css/main.css">
   <style>
-    .entrenador-grid { display: grid; grid-template-columns: 420px 1fr; gap: 1.5rem; }
-    .camara-box {
-      position: relative; background: #000;
-      border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 4/3;
-      border: 2px solid var(--border);
-    }
-    .camara-box video  { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
-    .camara-box canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+    html, body { height: 100%; margin: 0; overflow: hidden; }
 
-    /* Cuenta regresiva overlay */
-    .cuenta-overlay {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      background: rgba(0,0,0,.6);
+    .admin-shell {
+      display: grid;
+      grid-template-rows: 48px 1fr;
+      grid-template-columns: 220px 1fr;
+      height: 100vh;
     }
-    .cuenta-num { font-size: 7rem; font-weight: 900; color: #f59e0b; line-height: 1; }
-    .cuenta-sub { font-size: 1rem; color: #fff; margin-top: .5rem; }
 
-    .gesto-item {
-      display: flex; align-items: center; gap: .75rem;
-      padding: .6rem .75rem;
-      background: var(--bg-700); border: 1px solid var(--border);
+    /* NAVBAR — fila completa */
+    .navbar {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      gap: .75rem;
+      background: var(--bg-800);
+      border-bottom: 1px solid var(--border);
+      z-index: 50;
+    }
+    .navbar-brand { font-weight: 700; font-size: .95rem; flex: 1; }
+    .navbar-nav   { display: flex; align-items: center; gap: .5rem; }
+
+    /* SIDEBAR */
+    .admin-sidebar {
+      grid-column: 1;
+      grid-row: 2;
+      background: var(--bg-800);
+      border-right: 1px solid var(--border);
+      padding: 1rem .75rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      padding: .55rem .75rem;
       border-radius: var(--radius-md);
-      transition: background var(--transition);
+      font-size: .88rem;
+      font-weight: 500;
+      color: var(--text-300);
+      cursor: pointer;
+      transition: all .15s ease;
+      border: 1px solid transparent;
+      user-select: none;
     }
-    .gesto-item:hover { background: var(--bg-600); }
-    .gesto-nombre { font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; min-width: 60px; }
-    .gesto-tipo { font-size: .72rem; }
+    .sidebar-item:hover  { background: var(--bg-700); color: var(--text-100); }
+    .sidebar-item.active {
+      background: rgba(79,142,247,.12);
+      border-color: rgba(79,142,247,.25);
+      color: var(--accent);
+    }
+    .sidebar-item .icon { font-size: 1rem; width: 20px; text-align: center; }
 
-    /* Config sliders */
-    .config-item {
-      display: grid; grid-template-columns: 1fr auto;
-      gap: .5rem; align-items: center;
-      padding: .75rem; background: var(--bg-700);
-      border: 1px solid var(--border); border-radius: var(--radius-md);
-    }
-    .config-slider { width: 100%; margin-top: .3rem; }
-    .config-valor {
-      font-family: var(--font-mono); font-size: .9rem;
-      color: var(--accent); font-weight: 600; text-align: right; min-width: 50px;
-    }
+    .sidebar-divider { height: 1px; background: var(--border); margin: .5rem 0; }
 
-    /* Muestras visuales */
-    .muestras-contador {
-      display: flex; gap: 4px; flex-wrap: wrap;
+    /* FRAME WRAP */
+    .frame-wrap {
+      grid-column: 2;
+      grid-row: 2;
+      position: relative;
+      overflow: hidden;
     }
-    .muestra-dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--success); transition: transform .1s ease;
-    }
-    .muestra-dot.pendiente { background: var(--bg-500); }
+    .frame-wrap iframe { width: 100%; height: 100%; border: none; }
 
-    @keyframes pulso { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
-    .pulso { animation: pulso .3s ease; }
+    /* Overlay de carga */
+    #frame-loading {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-900);
+      color: var(--text-300);
+      font-size: .9rem;
+      gap: .5rem;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #frame-loading.visible { display: flex; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
   </style>
 </head>
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar">
-  <a href="dashboard.html" style="color:var(--text-300); font-size:.85rem">← Dashboard</a>
-  <span class="navbar-brand" style="margin-left:.5rem">⚙️ Panel Admin</span>
-  <div class="navbar-nav">
-    <span id="nav-nombre" class="text-muted text-sm" style="margin-right:.75rem"></span>
-    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Salir</button>
-  </div>
-</nav>
+<div class="admin-shell">
 
-<!-- LAYOUT -->
-<div class="admin-layout">
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="dashboard.html" style="color:var(--text-300);font-size:.82rem;text-decoration:none">
+      ← Dashboard
+    </a>
+    <span class="navbar-brand">⚙️ Panel Admin</span>
+    <div class="navbar-nav">
+      <span id="nav-nombre" style="font-size:.82rem;color:var(--text-300);margin-right:.5rem"></span>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Salir</button>
+    </div>
+  </nav>
 
   <!-- SIDEBAR -->
   <aside class="admin-sidebar">
-    <div class="admin-sidebar-item active" onclick="mostrarSeccion('entrenador')">
-      <span>🖐️</span> Entrenador de gestos
+
+    <div class="sidebar-item active" data-page="entrenador_gestos" onclick="navegar(this)">
+      <span class="icon">🖐️</span> Entrenador de gestos
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('gestos-lista')">
-      <span>📋</span> Gestos registrados
+
+    <div class="sidebar-item" data-page="gestos_registrados" onclick="navegar(this)">
+      <span class="icon">📋</span> Gestos registrados
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('configuracion')">
-      <span>🎛️</span> Configuración
+
+    <div class="sidebar-item" data-page="test_reconocimiento" onclick="navegar(this)">
+      <span class="icon">🧪</span> Test de reconocimiento
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('usuarios')">
-      <span>👥</span> Usuarios
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-item" data-page="configuracion" onclick="navegar(this)">
+      <span class="icon">🎛️</span> Configuración
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('estadisticas')">
-      <span>📊</span> Estadísticas
+
+    <div class="sidebar-item" data-page="usuarios" onclick="navegar(this)">
+      <span class="icon">👥</span> Usuarios
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('test-reconocimiento')">
-      <span>🧪</span> Test reconocimiento
+
+    <div class="sidebar-item" data-page="estadisticas" onclick="navegar(this)">
+      <span class="icon">📊</span> Estadísticas
     </div>
+
   </aside>
 
-  <!-- CONTENIDO -->
-  <main class="admin-content">
+  <!-- IFRAME -->
+  <div class="frame-wrap">
+    <iframe id="page-frame" src="admin_pages/entrenador_gestos.html"></iframe>
+    <div id="frame-loading">
+      <div class="spinner"></div> Cargando...
+    </div>
+  </div>
 
-    <!-- ===================================================== -->
-    <!-- SECCIÓN: ENTRENADOR DE GESTOS                         -->
-    <!-- ===================================================== -->
-    <section id="sec-entrenador">
-
-      <h2 style="margin-bottom:1.5rem">🖐️ Entrenador de gestos</h2>
-
-      <div class="entrenador-grid">
-
-        <!-- Cámara -->
-        <div>
-          <div class="camara-box" id="camara-box">
-            <video id="cam-video" autoplay muted playsinline></video>
-            <canvas id="cam-canvas"></canvas>
-            <!-- Overlay de cuenta regresiva -->
-            <div class="cuenta-overlay" id="cuenta-overlay" style="display:none">
-              <div class="cuenta-num" id="cuenta-num">3</div>
-              <div class="cuenta-sub">Mantén el gesto estático</div>
-            </div>
-          </div>
-
-          <!-- Estado de captura -->
-          <div class="captura-estado" id="captura-estado">
-            <span style="font-size:1.2rem">📷</span>
-            <span>Activa la cámara y elige un gesto para comenzar</span>
-          </div>
-
-          <!-- Muestras recolectadas -->
-          <div style="margin-top:.75rem">
-            <div style="font-size:.8rem; color:var(--text-300); margin-bottom:.4rem">
-              Muestras capturadas: <span id="muestras-conteo">0</span>/30
-            </div>
-            <div class="muestras-contador" id="muestras-dots">
-              <!-- Se llenan dinámicamente -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Controles de entrenamiento -->
-        <div class="flex-col gap-4">
-
-          <!-- Nombre del gesto -->
-          <div class="card card-sm">
-            <h4 style="margin-bottom:.75rem">Configurar gesto</h4>
-            <div class="input-group" style="margin-bottom:.75rem">
-              <label>Nombre del gesto</label>
-              <input id="gesto-nombre" class="input" type="text"
-                     placeholder="Ej: A, HOLA, GRACIAS"
-                     style="text-transform:uppercase; font-family:var(--font-mono); font-size:1.1rem">
-            </div>
-            <div class="input-group" style="margin-bottom:.75rem">
-              <label>Tipo</label>
-              <select id="gesto-tipo" class="input">
-                <option value="letter">Letra (A-Z)</option>
-                <option value="word">Palabra completa</option>
-                <option value="custom">Personalizado</option>
-              </select>
-            </div>
-            <div class="input-group">
-              <label>Descripción (opcional)</label>
-              <input id="gesto-desc" class="input" type="text" placeholder="Describe el gesto...">
-            </div>
-          </div>
-
-          <!-- Botones de captura -->
-          <div class="card card-sm flex-col gap-3">
-            <h4>Captura</h4>
-
-            <button class="btn btn-primary btn-full" id="btn-activar-cam" onclick="activarCamara()">
-              📷 Activar cámara
-            </button>
-
-            <button class="btn btn-success btn-full" id="btn-iniciar-captura" onclick="iniciarCaptura()" disabled>
-              ⏺️ Iniciar captura (30 muestras)
-            </button>
-
-            <div class="progress" style="height:10px">
-              <div id="captura-progress" class="progress-bar green" style="width:0%"></div>
-            </div>
-
-            <button class="btn btn-primary btn-full" id="btn-guardar" onclick="guardarGesto()" disabled>
-              💾 Guardar gesto
-            </button>
-
-            <button class="btn btn-ghost btn-full btn-sm" onclick="resetCaptura()">
-              🔄 Reiniciar captura
-            </button>
-          </div>
-
-          <!-- Abecedario rápido -->
-          <div class="card card-sm">
-            <h4 style="margin-bottom:.75rem">Acceso rápido — Abecedario</h4>
-            <div style="display:flex; flex-wrap:wrap; gap:.4rem;">
-              #{'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l =>
-                `<button class="btn btn-ghost btn-sm" onclick="seleccionarLetra('${l}')">${l}</button>`
-              ).join('')}
-            </div>
-            <div style="margin-top:.75rem; display:flex; flex-wrap:wrap; gap:.4rem;">
-              ${['HOLA','GRACIAS','SÍ','NO','POR FAVOR'].map(w =>
-                `<button class="btn btn-ghost btn-sm" onclick="seleccionarPalabra('${w}')">${w}</button>`
-              ).join('')}
-            </div>
-          </div>
-
-        </div><!-- /controles -->
-      </div><!-- /entrenador-grid -->
-    </section>
-
-    <!-- ===================================================== -->
-    <!-- SECCIÓN: GESTOS REGISTRADOS                           -->
-    <!-- ===================================================== -->
-    <section id="sec-gestos-lista" style="display:none">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem">
-        <h2>📋 Gestos registrados</h2>
-        <div style="display:flex; gap:.5rem">
-          <button class="btn btn-ghost btn-sm" onclick="exportarJSON()">⬇️ Exportar JSON</button>
-          <button class="btn btn-primary btn-sm" onclick="cargarGestos()">🔄 Actualizar</button>
-        </div>
-      </div>
-      <div id="gestos-grid" style="display:flex; flex-direction:column; gap:.5rem">
-        <div class="text-muted">Cargando...</div>
-      </div>
-    </section>
-
-    <!-- ===================================================== -->
-    <!-- SECCIÓN: CONFIGURACIÓN                                -->
-    <!-- ===================================================== -->
-    <section id="sec-configuracion" style="display:none">
-      <h2 style="margin-bottom:1.5rem">🎛️ Configuración del reconocedor</h2>
-      <div style="max-width:600px; display:flex; flex-direction:column; gap:1rem" id="config-lista">
-        <div class="text-muted">Cargando...</div>
-      </div>
-      <button class="btn btn-primary" style="margin-top:1.5rem" onclick="guardarConfig()">
-        💾 Guardar cambios
-      </button>
-    </section>
-
-    <!-- ===================================================== -->
-    <!-- SECCIÓN: USUARIOS                                     -->
-    <!-- ===================================================== -->
-    <section id="sec-usuarios" style="display:none">
-      <h2 style="margin-bottom:1.5rem">👥 Usuarios del sistema</h2>
-      <div style="overflow-x:auto">
-        <table class="tabla" id="tabla-usuarios">
-          <thead>
-            <tr>
-              <th>ID</th><th>Nombre</th><th>Email</th>
-              <th>Rol</th><th>Estado</th><th>Último login</th><th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="usuarios-body">
-            <tr><td colspan="7" class="text-muted">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- ===================================================== -->
-    <!-- SECCIÓN: ESTADÍSTICAS                                 -->
-    <!-- ===================================================== -->
-    <section id="sec-estadisticas" style="display:none">
-      <h2 style="margin-bottom:1.5rem">📊 Estadísticas del sistema</h2>
-      <div id="stats-grid" class="dashboard-grid">
-        <div class="text-muted">Cargando...</div>
-      </div>
-    </section>
-    <!-- ===================================================== -->
-    <!-- SECCIÓN: TEST DE RECONOCIMIENTO                       -->
-    <!-- ===================================================== -->
-    <section id="sec-test-reconocimiento" style="display:none">
-      <h2 style="margin-bottom:1.5rem">🧪 Test de reconocimiento en vivo</h2>
-      <div style="display:grid; grid-template-columns:480px 1fr; gap:1.5rem">
-
-        <!-- Cámara -->
-        <div>
-          <div class="camara-box" id="test-camara-box">
-            <video id="test-video" autoplay muted playsinline></video>
-            <canvas id="test-canvas"></canvas>
-          </div>
-          <div style="margin-top:.6rem; display:flex; gap:.5rem">
-            <button class="btn btn-primary flex-1" onclick="testIniciarCamara()">📷 Iniciar</button>
-            <button class="btn btn-danger  flex-1" onclick="testDetener()">⏹ Detener</button>
-            <button class="btn btn-ghost   flex-1" onclick="testLimpiar()">🗑 Limpiar</button>
-          </div>
-        </div>
-
-        <!-- Resultado -->
-        <div style="display:flex; flex-direction:column; gap:1rem">
-
-          <!-- Gesto detectado -->
-          <div class="card card-sm" style="text-align:center">
-            <div style="font-size:6rem; font-weight:900; color:var(--accent); line-height:1"
-                 id="test-letra">—</div>
-            <div style="font-size:.8rem; color:var(--text-300); margin-top:.25rem">Gesto detectado</div>
-            <div style="margin-top:.75rem">
-              <div style="display:flex; justify-content:space-between; font-size:.78rem; color:var(--text-300); margin-bottom:.3rem">
-                <span>Confianza</span>
-                <span id="test-conf-pct">0%</span>
-              </div>
-              <div class="progress">
-                <div class="progress-bar" id="test-conf-bar" style="width:0%"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Top 3 -->
-          <div class="card card-sm">
-            <div style="font-size:.78rem; color:var(--text-300); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.6rem">Top 3 candidatos</div>
-            <div style="display:flex; flex-direction:column; gap:.35rem" id="test-top3">
-              <div class="text-muted text-sm">Inicia la cámara...</div>
-            </div>
-          </div>
-
-          <!-- Historial -->
-          <div class="card card-sm">
-            <div style="font-size:.78rem; color:var(--text-300); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.6rem">Historial de detecciones</div>
-            <div style="display:flex; flex-wrap:wrap; gap:.3rem; min-height:32px" id="test-historial"></div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-  </main>
 </div>
-
-<div id="toast-container"></div>
-
-<!-- Canvas oculto para captura de landmarks -->
-<video id="cam-video-hidden" style="display:none" autoplay muted playsinline></video>
-<canvas id="cam-canvas-hidden" style="display:none" width="640" height="480"></canvas>
 
 <script src="js/app.js"></script>
 <script>
+  // ── Auth guard ─────────────────────────────────────────────
   Auth.requerir();
-  if (!Auth.esAdmin()) { window.location.href = 'dashboard.html'; }
+  if (!Auth.esAdmin()) { window.location.replace('dashboard.html'); }
 
-  document.getElementById('nav-nombre').textContent = Auth.usuario().nombre;
+  document.getElementById('nav-nombre').textContent = Auth.usuario()?.nombre || '';
 
-  // ============================================================
-  // NAVEGACIÓN ENTRE SECCIONES
-  // ============================================================
-  function mostrarSeccion(id) {
-    ['entrenador','gestos-lista','configuracion','usuarios','estadisticas','test-reconocimiento'].forEach(s => {
-      document.getElementById(`sec-${s}`).style.display = s === id ? '' : 'none';
-    });
-    document.querySelectorAll('.admin-sidebar-item').forEach((el, i) => {
-      el.classList.toggle('active', el.textContent.toLowerCase().includes(id.replace('-lista','')));
-    });
-    // Cargar datos según sección
-    if (id === 'gestos-lista')   cargarGestos();
-    if (id === 'configuracion')  cargarConfig();
-    if (id === 'usuarios')       cargarUsuarios();
-    if (id === 'estadisticas')   cargarEstadisticas();
+  // ── Navegación ─────────────────────────────────────────────
+  const frame   = document.getElementById('page-frame');
+  const loading = document.getElementById('frame-loading');
+
+  function navegar(el) {
+    const page = el.dataset.page;
+    if (!page) return;
+
+    // Activo en sidebar
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+
+    // Mostrar spinner + cambiar iframe
+    loading.classList.add('visible');
+    frame.src = `admin_pages/${page}.html`;
   }
 
-  // Generar botones del abecedario dinámicamente
+  frame.addEventListener('load', () => loading.classList.remove('visible'));
+
+  // ── Navegación directa por URL: admin.html?page=estadisticas
   (() => {
-    const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const palabras = ['HOLA','GRACIAS','SÍ','NO','POR FAVOR'];
-    let html = letras.split('').map(l =>
-      `<button class="btn btn-ghost btn-sm" onclick="seleccionarLetra('${l}')">${l}</button>`
-    ).join('');
-    html += '<br>';
-    html += palabras.map(w =>
-      `<button class="btn btn-ghost btn-sm" onclick="seleccionarPalabra('${w}')">${w}</button>`
-    ).join('');
-    document.querySelector('#sec-entrenador .card:last-child div:first-of-type').innerHTML = '';
-    const wrap = document.querySelector('#sec-entrenador .card:last-child');
-    wrap.insertAdjacentHTML('beforeend', `<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem">${html}</div>`);
+    const page = new URLSearchParams(window.location.search).get('page');
+    if (page) {
+      const item = document.querySelector(`[data-page="${page}"]`);
+      if (item) navegar(item);
+    }
   })();
 
-  // ============================================================
-  // CÁMARA
-  // ============================================================
-  let camStream   = null;
-  let mediaStream = null;
-
-  async function activarCamara() {
-    if (camStream) { desactivarCamara(); return; }
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 }, audio: false
-      });
-      const video  = document.getElementById('cam-video');
-      video.srcObject = mediaStream;
-      await video.play();
-      camStream = mediaStream;
-
-      document.getElementById('btn-activar-cam').textContent = '⏹ Detener cámara';
-      document.getElementById('btn-iniciar-captura').disabled = false;
-      setEstado('📷 Cámara activa. Realiza el gesto y presiona "Iniciar captura".');
-      toast('Cámara activada', 'success');
-    } catch (e) { toast('No se pudo acceder a la cámara', 'error'); }
-  }
-
-  function desactivarCamara() {
-    mediaStream?.getTracks().forEach(t => t.stop());
-    document.getElementById('cam-video').srcObject = null;
-    camStream = null;
-    document.getElementById('btn-activar-cam').textContent = '📷 Activar cámara';
-    document.getElementById('btn-iniciar-captura').disabled = true;
-    resetCaptura();
-  }
-
-  // ============================================================
-  // CAPTURA DE LANDMARKS (Envía frames al servidor vía fetch)
-  // ============================================================
-  let muestras      = [];   // Array de vectores capturados
-  let capturando    = false;
-  let capturaTimer  = null;
-
-  function iniciarCaptura() {
-    const nombre = document.getElementById('gesto-nombre').value.trim().toUpperCase();
-    if (!nombre) { toast('Ingresa el nombre del gesto primero', 'error'); return; }
-    if (!camStream) { toast('Activa la cámara primero', 'error'); return; }
-
-    resetCaptura(false);
-    capturando = true;
-
-    // Cuenta regresiva visual
-    let cuenta = 3;
-    document.getElementById('cuenta-overlay').style.display = 'flex';
-    document.getElementById('cuenta-num').textContent = cuenta;
-
-    const cuentaInterval = setInterval(() => {
-      cuenta--;
-      if (cuenta > 0) {
-        document.getElementById('cuenta-num').textContent = cuenta;
-      } else {
-        clearInterval(cuentaInterval);
-        document.getElementById('cuenta-overlay').style.display = 'none';
-        setEstado('⏺️ Capturando... mantén el gesto estático.');
-        _capturarMuestras();
-      }
-    }, 1000);
-  }
-
-  async function _capturarMuestras() {
-    const canvas = document.getElementById('cam-canvas');
-    const video  = document.getElementById('cam-video');
-    const ctx    = canvas.getContext('2d');
-    canvas.width = 640; canvas.height = 480;
-
-    // Capturar 30 frames con pausa entre ellos
-    for (let i = 0; i < 30 && capturando; i++) {
-      // Dibujar frame (espejado)
-      ctx.save(); ctx.scale(-1, 1);
-      ctx.drawImage(video, -640, 0, 640, 480);
-      ctx.restore();
-
-      // Obtener base64 del frame
-      const b64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-
-      // Enviar al servidor para extraer landmarks
-      try {
-        const res = await fetch('/api/admin/extraer-landmarks', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Auth.token()}`
-          },
-          body: JSON.stringify({ frame_b64: b64 })
-        });
-        const data = await res.json();
-        if (data.landmarks) {
-          muestras.push(data.landmarks);
-          actualizarDotsCaptura(muestras.length);
-        }
-      } catch(e) {
-        // Si falla un frame, continuar con el siguiente
-      }
-
-      // Pausa entre capturas
-      await new Promise(r => setTimeout(r, 60));
-    }
-
-    capturando = false;
-
-    if (muestras.length >= 10) {
-      document.getElementById('btn-guardar').disabled = false;
-      setEstado(`✅ Capturadas ${muestras.length} muestras. Presiona "Guardar gesto".`);
-      toast(`${muestras.length} muestras capturadas`, 'success');
-    } else {
-      setEstado('⚠️ Pocas muestras válidas. Asegúrate de que la mano sea visible.');
-      toast('No se detectó mano en suficientes frames', 'error');
-    }
-  }
-
-  function actualizarDotsCaptura(n) {
-    const total = 30;
-    document.getElementById('muestras-conteo').textContent = n;
-    document.getElementById('captura-progress').style.width = (n / total * 100) + '%';
-
-    const dots = document.getElementById('muestras-dots');
-    dots.innerHTML = Array.from({length: total}, (_, i) =>
-      `<div class="muestra-dot ${i < n ? 'pulso' : 'pendiente'}"></div>`
-    ).join('');
-  }
-
-  async function guardarGesto() {
-    if (!muestras.length) { toast('Primero captura muestras', 'error'); return; }
-
-    const nombre = document.getElementById('gesto-nombre').value.trim().toUpperCase();
-    const tipo   = document.getElementById('gesto-tipo').value;
-    const desc   = document.getElementById('gesto-desc').value.trim();
-
-    // Promediar los vectores de landmarks capturados
-    const promedio = muestras[0].map((_, i) =>
-      muestras.reduce((sum, m) => sum + m[i], 0) / muestras.length
-    );
-
-    try {
-      await Api.post('/admin/gestos', {
-        nombre, tipo, descripcion: desc,
-        landmarks: promedio,
-        muestras_usadas: muestras.length
-      });
-      toast(`Gesto "${nombre}" guardado exitosamente`, 'success');
-      resetCaptura();
-      document.getElementById('gesto-nombre').value = '';
-      document.getElementById('gesto-desc').value   = '';
-    } catch(e) { toast(e.message, 'error'); }
-  }
-
-  function resetCaptura(clearEstado = true) {
-    muestras = []; capturando = false;
-    clearTimeout(capturaTimer);
-    document.getElementById('btn-guardar').disabled = true;
-    document.getElementById('captura-progress').style.width = '0%';
-    document.getElementById('muestras-conteo').textContent = '0';
-    document.getElementById('muestras-dots').innerHTML = '';
-    document.getElementById('cuenta-overlay').style.display = 'none';
-    if (clearEstado) setEstado('Activa la cámara y elige un gesto para comenzar.');
-  }
-
-  function setEstado(msg) {
-    document.getElementById('captura-estado').innerHTML = `<span style="font-size:1.1rem">📋</span> ${msg}`;
-  }
-
-  function seleccionarLetra(l) {
-    document.getElementById('gesto-nombre').value = l;
-    document.getElementById('gesto-tipo').value   = 'letter';
-    document.getElementById('gesto-desc').value   = `Letra ${l} del abecedario`;
-  }
-  function seleccionarPalabra(w) {
-    document.getElementById('gesto-nombre').value = w;
-    document.getElementById('gesto-tipo').value   = 'word';
-    document.getElementById('gesto-desc').value   = `Palabra: ${w}`;
-  }
-
-  // ============================================================
-  // LISTA DE GESTOS
-  // ============================================================
-  async function cargarGestos() {
-    const { gestos } = await Api.get('/admin/gestos');
-    const contenedor = document.getElementById('gestos-grid');
-    if (!gestos.length) {
-      contenedor.innerHTML = '<div class="text-muted">No hay gestos registrados</div>';
-      return;
-    }
-    contenedor.innerHTML = gestos.map(g => `
-      <div class="gesto-item">
-        <div class="gesto-nombre">${g.nombre}</div>
-        <span class="badge ${g.tipo==='letter'?'badge-blue':g.tipo==='word'?'badge-green':'badge-purple'} gesto-tipo">
-          ${g.tipo}
-        </span>
-        <div class="flex-1 text-muted text-xs">${g.descripcion || '—'}</div>
-        <div class="text-xs text-muted">${g.muestras_usadas} muestras</div>
-        <div class="text-xs text-muted">${g.creado_por_nombre || 'Sistema'}</div>
-        <button class="btn btn-danger btn-sm" onclick="eliminarGesto('${g.nombre}')">✕</button>
-      </div>
-    `).join('');
-  }
-
-  async function eliminarGesto(nombre) {
-    if (!confirm(`¿Eliminar el gesto "${nombre}"?`)) return;
-    try {
-      await Api.delete(`/admin/gestos/${nombre}`);
-      toast(`Gesto "${nombre}" eliminado`, 'success');
-      cargarGestos();
-    } catch(e) { toast(e.message, 'error'); }
-  }
-
-  async function exportarJSON() {
-    await Api.post('/admin/gestos/exportar-json', {});
-    toast('Gestos exportados a gestos.json', 'success');
-  }
-
-  // ============================================================
-  // CONFIGURACIÓN
-  // ============================================================
-  let configActual = {};
-
-  const CONFIG_LABELS = {
-    umbral_similitud:     { label: 'Umbral de similitud', min: 0.1, max: 0.8, step: 0.01 },
-    frames_suavizado:     { label: 'Frames de suavizado',  min: 3,   max: 30,  step: 1    },
-    confianza_minima:     { label: 'Confianza mínima',      min: 0.1, max: 1.0, step: 0.05 },
-    tiempo_confirmacion:  { label: 'Tiempo de confirmación (s)', min: 0.5, max: 3.0, step: 0.1 },
-    tiempo_pausa_letra:   { label: 'Pausa entre letras (s)',      min: 0.5, max: 4.0, step: 0.1 },
-    tiempo_pausa_palabra: { label: 'Pausa entre palabras (s)',    min: 1.0, max: 8.0, step: 0.5 },
-    velocidad_voz:        { label: 'Velocidad de voz (WPM)',       min: 80,  max: 250, step: 5   },
+  // ── API para que las sub-páginas naveguen desde el iframe ──
+  // Uso: window.parent.adminNavegar('configuracion')
+  window.adminNavegar = (page) => {
+    const item = document.querySelector(`[data-page="${page}"]`);
+    if (item) navegar(item);
   };
-
-  async function cargarConfig() {
-    const { config } = await Api.get('/admin/config');
-    configActual = {};
-    config.forEach(c => configActual[c.clave] = c.valor);
-
-    const lista = document.getElementById('config-lista');
-    lista.innerHTML = config
-      .filter(c => CONFIG_LABELS[c.clave])
-      .map(c => {
-        const meta = CONFIG_LABELS[c.clave];
-        return `
-          <div class="config-item">
-            <div>
-              <div style="font-weight:600; font-size:.9rem">${meta.label}</div>
-              <div class="text-xs text-muted">${c.descripcion}</div>
-              <input type="range" class="config-slider"
-                     min="${meta.min}" max="${meta.max}" step="${meta.step}"
-                     value="${c.valor}"
-                     id="cfg-${c.clave}"
-                     oninput="document.getElementById('val-${c.clave}').textContent=this.value">
-            </div>
-            <div class="config-valor" id="val-${c.clave}">${c.valor}</div>
-          </div>`;
-      }).join('');
-  }
-
-  async function guardarConfig() {
-    const body = {};
-    Object.keys(CONFIG_LABELS).forEach(k => {
-      const el = document.getElementById(`cfg-${k}`);
-      if (el) body[k] = el.value;
-    });
-    try {
-      await Api.patch('/admin/config', body);
-      toast('Configuración guardada y aplicada en tiempo real', 'success');
-    } catch(e) { toast(e.message, 'error'); }
-  }
-
-  // ============================================================
-  // USUARIOS
-  // ============================================================
-  async function cargarUsuarios() {
-    const { usuarios } = await Api.get('/admin/usuarios');
-    document.getElementById('usuarios-body').innerHTML = usuarios.map(u => `
-      <tr>
-        <td class="mono text-xs">${u.id}</td>
-        <td><div style="font-weight:500">${u.nombre}</div></td>
-        <td class="text-sm text-muted">${u.email}</td>
-        <td>
-          <select class="input" style="padding:.3rem .5rem; font-size:.8rem"
-                  onchange="cambiarRol(${u.id}, this.value)">
-            <option value="usuario" ${u.rol==='usuario'?'selected':''}>Usuario</option>
-            <option value="admin"   ${u.rol==='admin'?'selected':''}>Admin</option>
-          </select>
-        </td>
-        <td>
-          <span class="badge ${u.activo?'badge-green':'badge-red'}">${u.activo?'Activo':'Baneado'}</span>
-        </td>
-        <td class="text-xs text-muted">${u.ultimo_login ? formatFecha(u.ultimo_login) : '—'}</td>
-        <td>
-          <button class="btn btn-ghost btn-sm"
-                  onclick="toggleActivo(${u.id}, ${u.activo})">
-            ${u.activo ? '⛔ Banear' : '✅ Activar'}
-          </button>
-        </td>
-      </tr>
-    `).join('');
-  }
-
-  async function cambiarRol(id, rol) {
-    try { await Api.patch(`/admin/usuarios/${id}`, { rol }); toast('Rol actualizado', 'success'); }
-    catch(e) { toast(e.message, 'error'); cargarUsuarios(); }
-  }
-  async function toggleActivo(id, activo) {
-    try { await Api.patch(`/admin/usuarios/${id}`, { activo: activo ? 0 : 1 }); cargarUsuarios(); }
-    catch(e) { toast(e.message, 'error'); }
-  }
-
-  // ============================================================
-  // ESTADÍSTICAS
-  // ============================================================
-  async function cargarEstadisticas() {
-    const s = await Api.get('/admin/stats');
-    document.getElementById('stats-grid').innerHTML = `
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(79,142,247,.15)">👥</div>
-        <div><div class="stat-value">${s.usuarios}</div><div class="stat-label">Usuarios totales</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(34,197,94,.15)">📞</div>
-        <div><div class="stat-value">${s.reuniones}</div><div class="stat-label">Reuniones creadas</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(245,158,11,.15)">🟢</div>
-        <div><div class="stat-value">${s.reuniones_activas}</div><div class="stat-label">Reuniones activas</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(192,132,252,.15)">💬</div>
-        <div><div class="stat-value">${s.mensajes}</div><div class="stat-label">Mensajes enviados</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(56,217,169,.15)">🖐️</div>
-        <div><div class="stat-value">${s.gestos}</div><div class="stat-label">Gestos registrados</div></div>
-      </div>
-    `;
-  }
-  // ============================================================
-  // TEST DE RECONOCIMIENTO EN VIVO
-  // ============================================================
-  let testStream = null;
-  let testTimer  = null;
-  let testGestosDB = null;
-  let testHistorial = [];
-  let testUltimaLetra = '';
-
-  async function testIniciarCamara() {
-    try {
-      testGestosDB = null;
-      const { gestos } = await Api.get('/admin/gestos');
-      testGestosDB = gestos;
-      toast(`${gestos.length} gestos cargados`, 'success');
-
-      testStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480 }, audio: false
-      });
-      const video  = document.getElementById('test-video');
-      const canvas = document.getElementById('test-canvas');
-      video.srcObject = testStream;
-      await video.play();
-      canvas.width = 640; canvas.height = 480;
-
-      testTimer = setInterval(() => _testCapturar(video, canvas), 1000 / 12);
-      toast('Cámara de prueba iniciada', 'success');
-    } catch(e) { toast('Error: ' + e.message, 'error'); }
-  }
-
-  async function _testCapturar(video, canvas) {
-    if (!video.videoWidth) return;
-    const ctx = canvas.getContext('2d');
-    ctx.save(); ctx.scale(-1,1);
-    ctx.drawImage(video, -640, 0, 640, 480);
-    ctx.restore();
-    const b64 = canvas.toDataURL('image/jpeg', 0.75).split(',')[1];
-
-    try {
-      const res = await fetch('/api/admin/extraer-landmarks', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${Auth.token()}` },
-        body: JSON.stringify({ frame_b64: b64 })
-      });
-      const data = await res.json();
-      if (data.landmarks) {
-        _testBuscarGesto(data.landmarks);
-        document.getElementById('test-camara-box').style.borderColor = 'var(--success)';
-      } else {
-        document.getElementById('test-letra').textContent = '—';
-        document.getElementById('test-conf-bar').style.width = '0%';
-        document.getElementById('test-conf-pct').textContent = '0%';
-        document.getElementById('test-camara-box').style.borderColor = 'var(--border)';
-      }
-    } catch(e) {}
-  }
-
-  function _testBuscarGesto(landmarks) {
-    if (!testGestosDB?.length) return;
-    const umbral = 0.5;
-    const resultados = testGestosDB.map(g => {
-      if (!g.landmarks || g.landmarks.length !== 63) return { nombre: g.nombre, dist: 999 };
-      let suma = 0;
-      for (let i = 0; i < 63; i++) {
-        const d = (landmarks[i]||0) - (g.landmarks[i]||0);
-        suma += d * d;
-      }
-      return { nombre: g.nombre, tipo: g.tipo, dist: Math.sqrt(suma) };
-    }).sort((a,b) => a.dist - b.dist);
-
-    const mejor    = resultados[0];
-    const confianza = Math.max(0, Math.min(1, 1 - (mejor.dist / umbral)));
-    const pct       = Math.round(confianza * 100);
-
-    document.getElementById('test-letra').textContent = mejor.nombre;
-    document.getElementById('test-conf-pct').textContent = pct + '%';
-    const bar = document.getElementById('test-conf-bar');
-    bar.style.width      = pct + '%';
-    bar.style.background = pct > 70 ? 'var(--success)' : pct > 40 ? 'var(--warning)' : 'var(--danger)';
-
-    // Top 3
-    document.getElementById('test-top3').innerHTML = resultados.slice(0,3).map((c,i) => {
-      const cp = Math.max(0, Math.round((1 - c.dist/umbral)*100));
-      const col = i===0 ? 'var(--accent)' : i===1 ? 'var(--accent-2)' : 'var(--text-300)';
-      return `<div style="display:flex;align-items:center;gap:.6rem;padding:.35rem .6rem;background:var(--bg-600);border-radius:6px">
-        <span style="font-family:monospace;font-weight:700;color:${col};min-width:40px">${c.nombre}</span>
-        <div style="flex:1;background:var(--bg-800);border-radius:999px;height:7px;overflow:hidden">
-          <div style="width:${Math.max(0,cp)}%;height:100%;background:${col};border-radius:999px"></div>
-        </div>
-        <span style="font-size:.75rem;color:var(--text-300);min-width:35px;text-align:right">${Math.max(0,cp)}%</span>
-      </div>`;
-    }).join('');
-
-    // Historial
-    if (mejor.nombre !== testUltimaLetra && confianza > 0.5) {
-      testUltimaLetra = mejor.nombre;
-      testHistorial.push(mejor.nombre);
-      if (testHistorial.length > 20) testHistorial.shift();
-      document.getElementById('test-historial').innerHTML =
-        testHistorial.map(l =>
-          `<span style="background:var(--bg-600);border:1px solid var(--border);border-radius:6px;padding:.2rem .5rem;font-family:monospace;font-size:.82rem">${l}</span>`
-        ).join('');
-    }
-  }
-
-  function testDetener() {
-    clearInterval(testTimer);
-    testStream?.getTracks().forEach(t => t.stop());
-    document.getElementById('test-video').srcObject = null;
-    document.getElementById('test-camara-box').style.borderColor = 'var(--border)';
-    toast('Test detenido', 'info');
-  }
-
-  function testLimpiar() {
-    testHistorial = []; testUltimaLetra = '';
-    document.getElementById('test-historial').innerHTML = '';
-    document.getElementById('test-letra').textContent = '—';
-    document.getElementById('test-conf-bar').style.width = '0%';
-    document.getElementById('test-conf-pct').textContent = '0%';
-  }
 </script>
 </body>
 </html>
