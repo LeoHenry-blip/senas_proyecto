@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body {
+      background: var(--bg-900); color: var(--text-100);
+      min-height: 100vh; padding: 1.75rem 2rem; overflow-y: auto;
+    }
+
+    .config-grid {
+      max-width: 680px;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+
+    .config-group-title {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-300);
+      padding: .3rem 0; border-bottom: 1px solid var(--border);
+      margin-top: .5rem; margin-bottom: -.25rem;
+    }
+
+    .config-item {
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: .9rem 1rem;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: .5rem; align-items: center;
+      transition: border-color .15s;
+    }
+    .config-item:focus-within { border-color: var(--accent); }
+
+    .config-label  { font-weight: 600; font-size: .9rem; color: var(--text-100); }
+    .config-desc   { font-size: .75rem; color: var(--text-300); margin-top: .15rem; }
+    .config-slider { width: 100%; margin-top: .5rem; accent-color: var(--accent); }
+    .config-valor  {
+      font-family: var(--font-mono); font-size: 1rem;
+      color: var(--accent); font-weight: 700;
+      text-align: right; min-width: 54px;
+    }
+
+    .actions-bar {
+      display: flex; align-items: center; gap: .75rem;
+      margin-top: 1.5rem; padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+    .save-feedback {
+      font-size: .82rem; color: var(--success);
+      opacity: 0; transition: opacity .3s;
+    }
+    .save-feedback.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem">
+  <div>
+    <h2>🎛️ Configuración del reconocedor</h2>
+    <p class="text-sm text-muted" style="margin-top:.3rem">
+      Los cambios se aplican en tiempo real al guardar.
+    </p>
+  </div>
+  <button class="btn btn-ghost btn-sm" onclick="cargarConfig()">🔄 Restaurar</button>
+</div>
+
+<div class="config-grid" id="config-lista">
+  <div class="text-muted">Cargando configuración...</div>
+</div>
+
+<div class="actions-bar">
+  <button class="btn btn-primary" onclick="guardarConfig()">💾 Guardar cambios</button>
+  <span class="save-feedback" id="save-feedback">✅ Guardado correctamente</span>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+  const CONFIG_META = {
+    umbral_similitud: {
+      label: 'Umbral de similitud', min: 0.1, max: 0.8, step: 0.01,
+      grupo: 'Reconocimiento',
+      desc:  'Distancia máxima euclidiana para considerar un gesto válido. Menor = más estricto.'
+    },
+    frames_suavizado: {
+      label: 'Frames de suavizado', min: 3, max: 30, step: 1,
+      grupo: 'Reconocimiento',
+      desc:  'Cantidad de frames para promediar la detección y reducir falsos positivos.'
+    },
+    confianza_minima: {
+      label: 'Confianza mínima', min: 0.1, max: 1.0, step: 0.05,
+      grupo: 'Reconocimiento',
+      desc:  'Porcentaje mínimo de confianza para registrar una detección.'
+    },
+    tiempo_confirmacion: {
+      label: 'Tiempo de confirmación (s)', min: 0.5, max: 3.0, step: 0.1,
+      grupo: 'Temporización',
+      desc:  'Segundos que debe mantenerse un gesto para confirmarlo.'
+    },
+    tiempo_pausa_letra: {
+      label: 'Pausa entre letras (s)', min: 0.5, max: 4.0, step: 0.1,
+      grupo: 'Temporización',
+      desc:  'Tiempo de espera antes de registrar una nueva letra.'
+    },
+    tiempo_pausa_palabra: {
+      label: 'Pausa entre palabras (s)', min: 1.0, max: 8.0, step: 0.5,
+      grupo: 'Temporización',
+      desc:  'Tiempo sin gestos para separar palabras automáticamente.'
+    },
+    velocidad_voz: {
+      label: 'Velocidad de voz (WPM)', min: 80, max: 250, step: 5,
+      grupo: 'Audio',
+      desc:  'Palabras por minuto de la síntesis de voz al leer el texto.'
+    },
+  };
+
+  let configActual = {};
+
+  async function cargarConfig() {
+    try {
+      const { config } = await Api.get('/admin/config');
+      configActual = {};
+      config.forEach(c => configActual[c.clave] = { ...c });
+      renderConfig(config);
+    } catch(e) {
+      document.getElementById('config-lista').innerHTML =
+        `<div class="text-muted">Error al cargar: ${e.message}</div>`;
+    }
+  }
+
+  function renderConfig(config) {
+    // Agrupar
+    const grupos = {};
+    config.forEach(c => {
+      const meta = CONFIG_META[c.clave];
+      if (!meta) return;
+      if (!grupos[meta.grupo]) grupos[meta.grupo] = [];
+      grupos[meta.grupo].push({ ...c, meta });
+    });
+
+    let html = '';
+    Object.entries(grupos).forEach(([grupo, items]) => {
+      html += `<div class="config-group-title">${grupo}</div>`;
+      items.forEach(({ clave, valor, meta, descripcion }) => {
+        html += `
+          <div class="config-item">
+            <div>
+              <div class="config-label">${meta.label}</div>
+              <div class="config-desc">${descripcion || meta.desc}</div>
+              <input type="range" class="config-slider"
+                     min="${meta.min}" max="${meta.max}" step="${meta.step}"
+                     value="${valor}"
+                     id="cfg-${clave}"
+                     oninput="document.getElementById('val-${clave}').textContent = (+this.value).toFixed(getDecimals('${clave}'))">
+            </div>
+            <div class="config-valor" id="val-${clave}">
+              ${(+valor).toFixed(getDecimals(clave))}
+            </div>
+          </div>`;
+      });
+    });
+
+    document.getElementById('config-lista').innerHTML = html;
+  }
+
+  function getDecimals(clave) {
+    const step = CONFIG_META[clave]?.step || 1;
+    return step < 1 ? String(step).split('.')[1]?.length || 0 : 0;
+  }
+
+  async function guardarConfig() {
+    const body = {};
+    Object.keys(CONFIG_META).forEach(k => {
+      const el = document.getElementById(`cfg-${k}`);
+      if (el) body[k] = el.value;
+    });
+    try {
+      await Api.patch('/admin/config', body);
+      toast('Configuración guardada', 'success');
+      const fb = document.getElementById('save-feedback');
+      fb.classList.add('visible');
+      setTimeout(() => fb.classList.remove('visible'), 2500);
+    } catch(e) { toast(e.message, 'error'); }
+  }
+
+  cargarConfig();
+</script>
+</body>
+</html>

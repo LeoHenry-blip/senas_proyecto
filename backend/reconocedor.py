@@ -1,329 +1,382 @@
 """
-reconocedor.py
-==============
-Módulo de reconocimiento de gestos y formación de palabras/frases.
-Detecta letras, forma palabras con pausas, construye frases completas.
-Incluye suavizado por promedio de frames para mayor estabilidad.
+reconocedor.py  v3.0
+====================
+Motor de reconocimiento con soporte hibrido:
+
+  LETRAS  → suavizado por buffer de 10 frames + euclidiana
+  PALABRAS → ventana deslizante de frames + DTW
+
+La ventana deslizante captura el movimiento en tiempo real:
+  - Acumula los ultimos N frames mientras hay mano visible
+  - Cuando detecta inicio de movimiento, empieza a grabar
+  - Cuando el movimiento termina (pausa), evalua con DTW
+  - Si DTW reconoce una palabra, la agrega a la frase
+
+Convivencia letras/palabras:
+  El sistema detecta letras y palabras en paralelo.
+  Si DTW da una palabra con confianza > umbral, la palabra gana.
+  Si no, se sigue acumulando letras normalmente.
 """
 
-import time           # Para medir pausas entre letras
-import numpy as np    # Para operaciones matemáticas
-from collections import deque  # Cola eficiente para historial
-from typing import Optional, Tuple, List  # Tipos para anotaciones
+import time
+import numpy as np
+from collections import deque
+from typing import Optional, Tuple, List
 
-from base_datos import BaseDatosGestos  # Importar manejador de base de datos
+from base_datos import BaseDatosGestos, NormalizadorMano
 
 
 class Reconocedor:
     """
-    Reconoce gestos y construye palabras/frases a partir de letras detectadas.
-    
-    Flujo:
-    1. Recibe landmarks de una mano
-    2. Extrae y normaliza el vector
-    3. Compara con la base de datos
-    4. Agrega letra a la palabra actual
-    5. Detecta pausa -> finaliza palabra
-    6. Acumula palabras -> forma frase
+    Reconoce gestos (letras y palabras) y forma frases en tiempo real.
+
+    Flujo para LETRAS:
+      frame → normalizar → buscar euclidiana → buffer → confirmar → agregar
+
+    Flujo para PALABRAS:
+      frame → normalizar → ventana deslizante → DTW → confirmar → agregar
     """
 
     def __init__(self, ruta_gestos: str = "gestos.json"):
-        """
-        Inicializa el reconocedor con todos sus parámetros.
-        
-        Args:
-            ruta_gestos: Ruta al archivo JSON de gestos
-        """
-        # Cargar la base de datos de gestos
+        # Base de datos (letras + palabras)
         self.db = BaseDatosGestos(ruta_gestos)
-        
-        # --- Configuración de suavizado ---
-        # Buffer circular para guardar los últimos N gestos detectados
-        # Esto evita que cambios rápidos/erróneos afecten el resultado
-        self.buffer_tamano = 10           # Cantidad de frames a promediar
-        self.buffer_gestos = deque(maxlen=self.buffer_tamano)  # Buffer FIFO
-        
-        # --- Configuración de tiempos ---
-        # Tiempo mínimo que debe mantenerse un gesto para ser aceptado (seg)
-        self.tiempo_confirmacion = 1.2
-        
-        # Tiempo de pausa para separar letras dentro de una palabra (seg)
-        self.tiempo_pausa_letra = 1.5
-        
-        # Tiempo de pausa para separar palabras en la frase (seg)
-        self.tiempo_pausa_palabra = 3.0
-        
-        # --- Estado del texto ---
-        self.letra_actual: str = ""         # Letra que se está mostrando ahora
-        self.palabra_actual: str = ""       # Palabra en formación
-        self.frase_completa: str = ""       # Frase acumulada
-        self.confianza_actual: float = 0.0  # Confianza del gesto actual
-        
-        # --- Control de tiempos ---
-        self.ultimo_gesto_tiempo = time.time()     # Cuándo se vio el último gesto
-        self.ultima_letra_tiempo = time.time()     # Cuándo se agregó la última letra
-        self.gesto_inicio_tiempo = time.time()     # Cuándo empezó el gesto actual
-        
-        # --- Último gesto confirmado ---
-        self.ultimo_gesto_nombre: Optional[str] = None  # Nombre del último gesto
-        self.gesto_confirmado: bool = False              # Si ya fue añadido al texto
-        
-        # --- Estado de pausa detectada ---
-        # True cuando el usuario hizo una pausa (para activar corrección IA)
-        self.pausa_detectada: bool = False
-        self.frase_para_corregir: str = ""  # Frase lista para ser corregida
-        
-        print("[Reconocedor] Sistema inicializado")
+
+        # ── Configuracion de suavizado para letras ──────────────────────
+        self.buffer_tamano = 10
+        self.buffer_gestos = deque(maxlen=self.buffer_tamano)
+
+        # ── Configuracion de tiempos ────────────────────────────────────
+        self.tiempo_confirmacion  = 1.2   # Segundos sosteniendo un gesto estatico
+        self.tiempo_pausa_letra   = 1.5   # Pausa entre letras
+        self.tiempo_pausa_palabra = 3.0   # Pausa para cerrar palabra
+
+        # ── Estado de texto ─────────────────────────────────────────────
+        self.letra_actual:    str   = ""
+        self.palabra_actual:  str   = ""
+        self.frase_completa:  str   = ""
+        self.confianza_actual: float = 0.0
+
+        # ── Control de tiempos ──────────────────────────────────────────
+        self.ultimo_gesto_tiempo  = time.time()
+        self.ultima_letra_tiempo  = time.time()
+        self.gesto_inicio_tiempo  = time.time()
+        self.ultimo_gesto_nombre: Optional[str] = None
+        self.gesto_confirmado:    bool = False
+
+        # ── Pausa detectada (para corrector IA) ─────────────────────────
+        self.pausa_detectada:     bool = False
+        self.frase_para_corregir: str  = ""
+
+        # ── VENTANA DESLIZANTE PARA DTW ──────────────────────────────────
+        # Acumula los ultimos N frames de landmarks normalizados
+        # Se usa para detectar palabras con movimiento
+        self.frames_dtw_max   = 30    # Maximo frames a acumular
+        self.frames_dtw_min   = 8     # Minimo frames para evaluar DTW
+        self.ventana_dtw: deque = deque(maxlen=self.frames_dtw_max)
+
+        # Estado de la ventana DTW
+        self._dtw_activo       = False   # True = hay movimiento en curso
+        self._dtw_inicio_t     = 0.0     # Cuando empezo el movimiento
+        self._dtw_ultima_eval  = 0.0     # Ultima vez que se evaluo DTW
+        self._dtw_intervalo    = 0.5     # Evaluar DTW cada N segundos
+
+        # Ultimo resultado DTW (para no repetir)
+        self._ultima_palabra_dtw: Optional[str] = None
+        self._dtw_palabra_tiempo  = 0.0
+
+        print("[Reconocedor] Sistema inicializado (v3.0 con DTW)")
+
+    # =========================================================================
+    # PROCESAMIENTO DE LANDMARKS (llamado en cada frame)
+    # =========================================================================
 
     def procesar_landmarks(self, landmarks) -> Tuple[Optional[str], float]:
         """
-        Procesa los landmarks de una mano y retorna el gesto reconocido.
-        Aplica suavizado por promedio de múltiples frames.
-        
+        Procesa landmarks de MediaPipe y retorna el gesto de letra reconocido.
+        Tambien actualiza la ventana DTW para palabras.
+
         Args:
-            landmarks: Landmarks de MediaPipe de una mano
-            
+            landmarks: Landmarks de MediaPipe
+
         Returns:
-            Tupla (nombre_gesto, confianza) o (None, 0.0)
+            (nombre_letra, confianza) — solo letras, las palabras se manejan
+            internamente via ventana DTW
         """
-        # Extraer el vector normalizado de los landmarks
+        # Normalizar el vector actual
         vector = self.db.extraer_vector_mano(landmarks)
         if vector is None:
-            # Si falla la extracción, retornar sin resultado
             return None, 0.0
-        
-        # Buscar el gesto más cercano en la base de datos
+
+        # Agregar frame a la ventana DTW (siempre, mientras haya mano)
+        self.ventana_dtw.append(vector)
+        self._dtw_activo = True
+        self._dtw_inicio_t = self._dtw_inicio_t or time.time()
+
+        # Buscar la letra mas parecida (para el flujo normal)
         nombre, confianza = self.db.buscar_gesto(vector)
-        
-        # Agregar resultado al buffer de suavizado
+
+        # Agregar al buffer de suavizado de letras
         self.buffer_gestos.append((nombre, confianza))
-        
-        # Si no hay suficientes frames en el buffer, no procesar aún
+
         if len(self.buffer_gestos) < 3:
             return None, 0.0
-        
-        # --- Suavizado: encontrar el gesto más votado en el buffer ---
-        # Contar cuántas veces aparece cada gesto en el buffer
-        conteo: dict = {}
+
+        # Suavizado por votacion
+        conteo:         dict = {}
         suma_confianza: dict = {}
-        
-        for gesto_buf, conf_buf in self.buffer_gestos:
-            if gesto_buf is not None:
-                # Incrementar contador del gesto
-                conteo[gesto_buf] = conteo.get(gesto_buf, 0) + 1
-                # Acumular confianza para promediar
-                suma_confianza[gesto_buf] = suma_confianza.get(gesto_buf, 0.0) + conf_buf
-        
-        # Si no hay votos válidos, retornar sin resultado
+        for g, c in self.buffer_gestos:
+            if g is not None:
+                conteo[g]         = conteo.get(g, 0) + 1
+                suma_confianza[g] = suma_confianza.get(g, 0.0) + c
+
         if not conteo:
             return None, 0.0
-        
-        # Encontrar el gesto con más votos (mayoría)
-        gesto_suavizado = max(conteo, key=conteo.get)
-        
-        # Calcular confianza promedio de ese gesto
+
+        gesto_suavizado   = max(conteo, key=conteo.get)
         confianza_promedio = suma_confianza[gesto_suavizado] / conteo[gesto_suavizado]
-        
-        # Solo retornar si tiene suficientes votos (al menos 40% del buffer)
+
         votos_minimos = max(3, self.buffer_tamano * 0.4)
         if conteo[gesto_suavizado] < votos_minimos:
             return None, 0.0
-        
+
         return gesto_suavizado, confianza_promedio
+
+    # =========================================================================
+    # ACTUALIZAR CON MANO (llamado en cada frame con mano visible)
+    # =========================================================================
+
+    def actualizar_con_mano(self, nombre_gesto: Optional[str],
+                             confianza: float) -> bool:
+        """
+        Actualiza el estado cuando hay mano visible.
+        Evalua DTW periodicamente si hay suficientes frames acumulados.
+
+        Args:
+            nombre_gesto: Resultado del reconocimiento de letra (puede ser None)
+            confianza:    Confianza del gesto estatico
+
+        Returns:
+            True si se agrego algo al texto
+        """
+        ahora = time.time()
+        self.ultimo_gesto_tiempo = ahora
+
+        # ── Evaluar DTW periodicamente ───────────────────────────────────
+        if (len(self.ventana_dtw) >= self.frames_dtw_min and
+                ahora - self._dtw_ultima_eval >= self._dtw_intervalo):
+            self._dtw_ultima_eval = ahora
+            self._evaluar_dtw()
+
+        # ── Flujo normal de letras ────────────────────────────────────────
+        if nombre_gesto is None:
+            self.letra_actual    = ""
+            self.confianza_actual = 0.0
+            return False
+
+        self.letra_actual    = nombre_gesto
+        self.confianza_actual = confianza
+
+        if nombre_gesto != self.ultimo_gesto_nombre:
+            self.ultimo_gesto_nombre = nombre_gesto
+            self.gesto_inicio_tiempo = ahora
+            self.gesto_confirmado    = False
+            return False
+
+        tiempo_sosteniendo = ahora - self.gesto_inicio_tiempo
+        tiempo_desde_ultima = ahora - self.ultima_letra_tiempo
+
+        if (tiempo_sosteniendo  >= self.tiempo_confirmacion and
+                tiempo_desde_ultima >= self.tiempo_pausa_letra and
+                not self.gesto_confirmado):
+
+            self.gesto_confirmado = True
+            self._agregar_al_texto(nombre_gesto)
+            self.ultima_letra_tiempo = ahora
+            return True
+
+        return False
+
+    # =========================================================================
+    # EVALUAR DTW (interno)
+    # =========================================================================
+
+    def _evaluar_dtw(self) -> None:
+        """
+        Evalua la ventana DTW actual contra todas las palabras entrenadas.
+        Si encuentra una coincidencia con suficiente confianza, agrega
+        la palabra a la frase y limpia la ventana.
+
+        Se llama periodicamente mientras hay mano y movimiento.
+        """
+        if not self.db.palabras:
+            return
+
+        # Convertir ventana a array (N, 63)
+        secuencia = np.stack(list(self.ventana_dtw), axis=0)
+
+        nombre, confianza = self.db.buscar_palabra_dtw(secuencia)
+
+        if nombre is None or confianza < 0.55:
+            return
+
+        ahora = time.time()
+
+        # Evitar repetir la misma palabra en menos de 2 segundos
+        if (nombre == self._ultima_palabra_dtw and
+                ahora - self._dtw_palabra_tiempo < 2.0):
+            return
+
+        # Agregar la palabra a la frase
+        print(f"[Reconocedor] Palabra DTW reconocida: '{nombre}' "
+              f"(confianza={confianza:.2f})")
+
+        self._agregar_palabra_directa(nombre)
+
+        # Registrar la palabra y limpiar la ventana
+        self._ultima_palabra_dtw = nombre
+        self._dtw_palabra_tiempo = ahora
+        self.ventana_dtw.clear()
+        self._dtw_activo = False
+
+    # =========================================================================
+    # ACTUALIZAR SIN MANO (llamado cuando no hay mano en el frame)
+    # =========================================================================
 
     def actualizar_sin_mano(self) -> None:
         """
-        Llama cuando no hay mano detectada en el frame.
-        Maneja las pausas para separar letras y palabras.
+        Llama cuando no hay mano visible.
+        Maneja pausas para separar letras y palabras.
+        Tambien evalua DTW final cuando termina el movimiento.
         """
-        tiempo_ahora = time.time()
-        
-        # Calcular cuánto tiempo lleva sin detectarse la mano
-        tiempo_sin_mano = tiempo_ahora - self.ultimo_gesto_tiempo
-        
-        # Limpiar el buffer y la letra actual
+        ahora = time.time()
+        tiempo_sin_mano = ahora - self.ultimo_gesto_tiempo
+
+        # Limpiar buffer de letras
         self.buffer_gestos.clear()
-        self.letra_actual = ""
+        self.letra_actual    = ""
         self.confianza_actual = 0.0
-        
-        # --- Pausa para separar palabras ---
+
+        # ── Evaluar DTW al terminar el movimiento ─────────────────────────
+        # Cuando la mano desaparece y hay frames acumulados, hacer una
+        # evaluacion final de la secuencia completa
+        if (self._dtw_activo and
+                len(self.ventana_dtw) >= self.frames_dtw_min and
+                tiempo_sin_mano >= 0.3):   # Pequeña pausa = fin del movimiento
+            self._evaluar_dtw()
+            self._dtw_activo = False
+
+        # Limpiar ventana DTW si pasa mucho tiempo sin mano
+        if tiempo_sin_mano >= 1.5:
+            self.ventana_dtw.clear()
+            self._dtw_activo      = False
+            self._dtw_inicio_t    = 0.0
+
+        # ── Pausa para finalizar palabra ──────────────────────────────────
         if tiempo_sin_mano >= self.tiempo_pausa_palabra:
-            # Si hay una palabra en formación, agregarla a la frase
             if self.palabra_actual:
-                # Agregar espacio entre palabras
                 if self.frase_completa:
                     self.frase_completa += " " + self.palabra_actual
                 else:
                     self.frase_completa = self.palabra_actual
-                
-                print(f"[Reconocedor] Palabra finalizada: '{self.palabra_actual}'")
-                print(f"[Reconocedor] Frase: '{self.frase_completa}'")
-                
-                # Limpiar palabra para empezar una nueva
+
+                print(f"[Reconocedor] Palabra: '{self.palabra_actual}' → "
+                      f"Frase: '{self.frase_completa}'")
                 self.palabra_actual = ""
-                
-                # Marcar que hay una frase lista para corregir
+
                 if self.frase_completa:
-                    self.pausa_detectada = True
+                    self.pausa_detectada     = True
                     self.frase_para_corregir = self.frase_completa
 
-    def actualizar_con_mano(self, nombre_gesto: Optional[str], confianza: float) -> bool:
-        """
-        Actualiza el estado cuando se detecta un gesto.
-        
-        Args:
-            nombre_gesto: Nombre del gesto detectado (puede ser None)
-            confianza: Nivel de confianza (0-1)
-            
-        Returns:
-            True si se agregó una nueva letra/palabra
-        """
-        tiempo_ahora = time.time()
-        
-        # Actualizar tiempo del último gesto válido
-        self.ultimo_gesto_tiempo = tiempo_ahora
-        
-        # Si no se reconoció ningún gesto, salir
-        if nombre_gesto is None:
-            self.letra_actual = ""
-            self.confianza_actual = 0.0
-            return False
-        
-        # Actualizar la letra actual que se muestra en pantalla
-        self.letra_actual = nombre_gesto
-        self.confianza_actual = confianza
-        
-        # --- Lógica de confirmación de gesto ---
-        # Solo añadir letra si el gesto es diferente al último añadido
-        # O si ha pasado suficiente tiempo desde la última letra
-        
-        if nombre_gesto != self.ultimo_gesto_nombre:
-            # Es un gesto diferente, reiniciar temporizador
-            self.ultimo_gesto_nombre = nombre_gesto
-            self.gesto_inicio_tiempo = tiempo_ahora
-            self.gesto_confirmado = False
-            return False
-        
-        # Es el mismo gesto, verificar si ha durado suficiente tiempo
-        tiempo_sosteniendo = tiempo_ahora - self.gesto_inicio_tiempo
-        
-        # Verificar que pasó el tiempo mínimo entre letras
-        tiempo_desde_ultima = tiempo_ahora - self.ultima_letra_tiempo
-        
-        # Solo confirmar si:
-        # 1. Se sostuvo el gesto por el tiempo mínimo
-        # 2. Pasó el tiempo mínimo desde la última letra
-        # 3. No fue ya confirmado este ciclo
-        if (tiempo_sosteniendo >= self.tiempo_confirmacion and
-                tiempo_desde_ultima >= self.tiempo_pausa_letra and
-                not self.gesto_confirmado):
-            
-            # Marcar como confirmado para no añadir dos veces
-            self.gesto_confirmado = True
-            
-            # Agregar la letra/palabra al texto
-            self._agregar_al_texto(nombre_gesto)
-            
-            # Actualizar tiempo de última letra
-            self.ultima_letra_tiempo = tiempo_ahora
-            
-            return True  # Indica que se añadió algo nuevo
-        
-        return False
+    # =========================================================================
+    # AGREGAR TEXTO
+    # =========================================================================
 
     def _agregar_al_texto(self, nombre: str) -> None:
-        """
-        Agrega un gesto reconocido al texto (letra o palabra completa).
-        
-        Args:
-            nombre: Nombre del gesto a agregar
-        """
-        # Verificar el tipo de gesto en la base de datos
-        if nombre in self.db.gestos:
-            tipo = self.db.gestos[nombre]["tipo"]
-        else:
-            tipo = "letter"  # Asumir letra por defecto
-        
+        """Agrega una letra al texto en formacion."""
+        tipo = self.db.gestos.get(nombre, {}).get("tipo", "letter")
+
         if tipo == "word":
-            # Es una palabra completa: agregarla directamente a la frase
-            if self.palabra_actual:
-                # Primero finalizar la palabra en formación
-                if self.frase_completa:
-                    self.frase_completa += " " + self.palabra_actual
-                else:
-                    self.frase_completa = self.palabra_actual
-                self.palabra_actual = ""
-            
-            # Agregar la palabra completa a la frase
-            if self.frase_completa:
-                self.frase_completa += " " + nombre
-            else:
-                self.frase_completa = nombre
-            
-            print(f"[Reconocedor] Palabra directa: '{nombre}'")
-        
+            # Palabra estatica (sin movimiento)
+            self._agregar_palabra_directa(nombre)
         else:
-            # Es una letra: agregarla a la palabra en formación
+            # Letra
             self.palabra_actual += nombre
-            print(f"[Reconocedor] Letra añadida: '{nombre}' -> Palabra: '{self.palabra_actual}'")
+            print(f"[Reconocedor] Letra: '{nombre}' → "
+                  f"Palabra: '{self.palabra_actual}'")
 
-    def obtener_estado(self) -> dict:
+    def _agregar_palabra_directa(self, nombre: str) -> None:
         """
-        Retorna el estado actual del reconocedor para mostrar en la UI.
-        
-        Returns:
-            Diccionario con todos los valores del estado actual
+        Agrega una palabra completa a la frase.
+        Primero cierra cualquier letra en formacion.
         """
-        return {
-            "letra_actual": self.letra_actual,
-            "palabra_actual": self.palabra_actual,
-            "frase_completa": self.frase_completa,
-            "confianza": self.confianza_actual,
-            "pausa_detectada": self.pausa_detectada,
-            "frase_para_corregir": self.frase_para_corregir
-        }
-
-    def limpiar_todo(self) -> None:
-        """
-        Reinicia todo el estado del reconocedor.
-        Útil cuando el usuario presiona el botón "Limpiar".
-        """
-        self.letra_actual = ""
-        self.palabra_actual = ""
-        self.frase_completa = ""
-        self.confianza_actual = 0.0
-        self.ultimo_gesto_nombre = None
-        self.gesto_confirmado = False
-        self.pausa_detectada = False
-        self.frase_para_corregir = ""
-        self.buffer_gestos.clear()
-        print("[Reconocedor] Estado limpiado")
-
-    def consumir_pausa(self) -> Optional[str]:
-        """
-        Consume la pausa detectada y retorna la frase para corregir.
-        Después de llamar esto, pausa_detectada queda en False.
-        
-        Returns:
-            La frase lista para corregir, o None si no hay pausa
-        """
-        if self.pausa_detectada:
-            frase = self.frase_para_corregir
-            self.pausa_detectada = False    # Marcar como consumida
-            self.frase_para_corregir = ""   # Limpiar frase pendiente
-            return frase
-        return None
-
-    def forzar_fin_palabra(self) -> None:
-        """
-        Fuerza el final de la palabra actual.
-        Útil para el botón manual de separar palabras.
-        """
+        # Cerrar letra en formacion si existe
         if self.palabra_actual:
             if self.frase_completa:
                 self.frase_completa += " " + self.palabra_actual
             else:
                 self.frase_completa = self.palabra_actual
             self.palabra_actual = ""
-            self.pausa_detectada = True
+
+        # Agregar la palabra
+        if self.frase_completa:
+            self.frase_completa += " " + nombre
+        else:
+            self.frase_completa = nombre
+
+        print(f"[Reconocedor] Palabra directa: '{nombre}' → "
+              f"Frase: '{self.frase_completa}'")
+
+    # =========================================================================
+    # ESTADO Y CONTROL
+    # =========================================================================
+
+    def obtener_estado(self) -> dict:
+        """Estado actual para mostrar en la UI."""
+        return {
+            "letra_actual":    self.letra_actual,
+            "palabra_actual":  self.palabra_actual,
+            "frase_completa":  self.frase_completa,
+            "confianza":       self.confianza_actual,
+            "pausa_detectada": self.pausa_detectada,
+            "frase_para_corregir": self.frase_para_corregir,
+            # Info extra del DTW para debug
+            "frames_dtw_acumulados": len(self.ventana_dtw),
+            "dtw_activo":      self._dtw_activo,
+        }
+
+    def limpiar_todo(self) -> None:
+        """Reinicia todo el estado."""
+        self.letra_actual    = ""
+        self.palabra_actual  = ""
+        self.frase_completa  = ""
+        self.confianza_actual = 0.0
+        self.ultimo_gesto_nombre = None
+        self.gesto_confirmado    = False
+        self.pausa_detectada     = False
+        self.frase_para_corregir = ""
+        self.buffer_gestos.clear()
+        self.ventana_dtw.clear()
+        self._dtw_activo      = False
+        self._dtw_inicio_t    = 0.0
+        self._ultima_palabra_dtw = None
+        print("[Reconocedor] Estado limpiado")
+
+    def consumir_pausa(self) -> Optional[str]:
+        """Consume la pausa detectada y retorna la frase para corregir."""
+        if self.pausa_detectada:
+            frase = self.frase_para_corregir
+            self.pausa_detectada     = False
+            self.frase_para_corregir = ""
+            return frase
+        return None
+
+    def forzar_fin_palabra(self) -> None:
+        """Fuerza el cierre de la palabra actual (boton manual)."""
+        if self.palabra_actual:
+            if self.frase_completa:
+                self.frase_completa += " " + self.palabra_actual
+            else:
+                self.frase_completa = self.palabra_actual
+            self.palabra_actual      = ""
+            self.pausa_detectada     = True
             self.frase_para_corregir = self.frase_completa

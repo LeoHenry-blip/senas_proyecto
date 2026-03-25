@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entrenador de Gestos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body { background:var(--bg-900); color:var(--text-100); min-height:100vh; padding:1.75rem 2rem; overflow-y:auto; }
+    .entrenador-grid { display:grid; grid-template-columns:420px 1fr; gap:1.5rem; }
+    .camara-box { position:relative; background:#000; border-radius:var(--radius-lg); overflow:hidden; aspect-ratio:4/3; border:2px solid var(--border); }
+    .camara-box video  { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+    .camara-box canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+    .cuenta-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,.6); }
+    .cuenta-num { font-size:7rem; font-weight:900; color:#f59e0b; line-height:1; }
+    .cuenta-sub { font-size:1rem; color:#fff; margin-top:.5rem; }
+    .modo-tabs { display:flex; gap:.4rem; margin-bottom:1rem; }
+    .modo-tab { flex:1; padding:.5rem; text-align:center; cursor:pointer; border-radius:var(--radius-md); border:2px solid var(--border); font-weight:600; font-size:.85rem; transition:all .2s; background:var(--bg-700); color:var(--text-300); }
+    .modo-tab.active { border-color:var(--accent); color:var(--accent); background:rgba(79,142,247,.12); }
+    .panel-modo { display:none; }
+    .panel-modo.activo { display:block; }
+    .muestras-contador { display:flex; gap:4px; flex-wrap:wrap; }
+    .muestra-dot { width:10px; height:10px; border-radius:50%; background:var(--success); }
+    .muestra-dot.pendiente { background:var(--bg-500); }
+    @keyframes pulso { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
+    .pulso { animation:pulso .3s ease; }
+    .rep-indicadores { display:flex; gap:.6rem; margin:.75rem 0; }
+    .rep-dot { width:36px; height:36px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; color:var(--text-300); transition:all .3s; }
+    .rep-dot.lista    { background:var(--success); border-color:var(--success); color:#fff; }
+    .rep-dot.grabando { background:var(--danger); border-color:var(--danger); color:#fff; animation:pulso .6s ease infinite; }
+    .rep-dot.pendiente{ background:var(--bg-600); }
+    .rec-badge { position:absolute; top:10px; right:10px; background:var(--danger); color:#fff; padding:.25rem .6rem; border-radius:20px; font-size:.75rem; font-weight:700; display:none; align-items:center; gap:.3rem; }
+    .rec-badge.visible { display:flex; }
+    @keyframes parpadeo { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .rec-dot { width:8px; height:8px; border-radius:50%; background:#fff; animation:parpadeo .8s infinite; }
+    .captura-estado { display:flex; align-items:center; gap:.5rem; padding:.6rem .75rem; margin-top:.6rem; background:var(--bg-700); border:1px solid var(--border); border-radius:var(--radius-md); font-size:.83rem; color:var(--text-300); }
+    /* Indicador de normalización */
+    .norm-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .5rem; border-radius:4px; font-size:.7rem; font-weight:600; background:rgba(34,197,94,.12); color:var(--success); border:1px solid rgba(34,197,94,.2); margin-left:.4rem; }
+  </style>
+</head>
+<body>
+
+<h2 style="margin-bottom:1.5rem">🖐️ Entrenador de gestos
+  <span class="norm-badge">✓ normalización 3 capas</span>
+</h2>
+
+<div class="modo-tabs">
+  <div class="modo-tab active" id="tab-letra"   onclick="cambiarModo('letra')">✋ Letra / Gesto estático</div>
+  <div class="modo-tab"        id="tab-palabra" onclick="cambiarModo('palabra')">🤟 Palabra con movimiento (DTW)</div>
+</div>
+
+<div class="entrenador-grid">
+
+  <!-- CÁMARA -->
+  <div>
+    <div class="camara-box">
+      <video id="cam-video" autoplay muted playsinline></video>
+      <canvas id="cam-canvas"></canvas>
+      <div class="cuenta-overlay" id="cuenta-overlay" style="display:none">
+        <div class="cuenta-num" id="cuenta-num">3</div>
+        <div class="cuenta-sub" id="cuenta-sub">Prepárate...</div>
+      </div>
+      <div class="rec-badge" id="rec-badge"><div class="rec-dot"></div> REC</div>
+    </div>
+    <div class="captura-estado" id="captura-estado">
+      <span>📷</span><span>Activa la cámara y elige un gesto para comenzar</span>
+    </div>
+
+    <!-- Dots modo LETRA -->
+    <div id="panel-letra-cam" class="panel-modo activo" style="margin-top:.75rem">
+      <div style="font-size:.8rem;color:var(--text-300);margin-bottom:.4rem">Muestras: <span id="muestras-conteo">0</span>/30</div>
+      <div class="muestras-contador" id="muestras-dots"></div>
+      <div class="progress" style="height:8px;margin-top:.5rem">
+        <div id="captura-progress" class="progress-bar green" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Indicadores modo PALABRA -->
+    <div id="panel-palabra-cam" class="panel-modo" style="margin-top:.75rem">
+      <div style="font-size:.8rem;color:var(--text-300);margin-bottom:.5rem">Repeticiones grabadas (necesitas 3):</div>
+      <div class="rep-indicadores">
+        <div class="rep-dot pendiente" id="rep-0">1</div>
+        <div class="rep-dot pendiente" id="rep-1">2</div>
+        <div class="rep-dot pendiente" id="rep-2">3</div>
+      </div>
+      <div style="font-size:.75rem;color:var(--text-400);margin-top:.4rem" id="rep-hint">
+        Haz el movimiento completo de la seña en cada repetición
+      </div>
+      <div class="progress" style="height:8px;margin-top:.5rem">
+        <div id="captura-progress-dtw" class="progress-bar" style="width:0%;background:var(--accent)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROLES -->
+  <div class="flex-col gap-4">
+
+    <div class="card card-sm">
+      <h4 style="margin-bottom:.75rem">Configurar gesto</h4>
+      <div class="input-group" style="margin-bottom:.75rem">
+        <label>Nombre del gesto</label>
+        <input id="gesto-nombre" class="input" type="text" placeholder="Ej: A, HOLA, GRACIAS"
+               style="text-transform:uppercase;font-family:var(--font-mono);font-size:1.1rem"
+               oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="input-group">
+        <label>Descripción (opcional)</label>
+        <input id="gesto-desc" class="input" type="text" placeholder="Describe el gesto...">
+      </div>
+    </div>
+
+    <!-- Panel LETRA -->
+    <div id="panel-letra-ctrl" class="panel-modo activo card card-sm flex-col gap-3">
+      <h4>Captura — modo letra estática</h4>
+      <p class="text-sm text-muted" style="margin:0">Mantén la mano quieta. Se toman 30 muestras, se normalizan y se promedian.</p>
+      <button class="btn btn-primary btn-full" id="btn-activar-cam" onclick="activarCamara()">📷 Activar cámara</button>
+      <button class="btn btn-success btn-full" id="btn-iniciar-captura" onclick="iniciarCaptura()" disabled>⏺️ Iniciar captura (30 muestras)</button>
+      <button class="btn btn-primary btn-full" id="btn-guardar" onclick="guardarGesto()" disabled>💾 Guardar letra</button>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="resetCaptura()">🔄 Reiniciar</button>
+    </div>
+
+    <!-- Panel PALABRA -->
+    <div id="panel-palabra-ctrl" class="panel-modo card card-sm flex-col gap-3">
+      <h4>Captura — modo palabra con movimiento</h4>
+      <p class="text-sm text-muted" style="margin:0">
+        Graba el movimiento completo <strong>3 veces</strong>. Cada frame se normaliza antes de guardar.
+      </p>
+      <button class="btn btn-primary btn-full" id="btn-activar-cam-dtw" onclick="activarCamara()">📷 Activar cámara</button>
+      <button class="btn btn-success btn-full" id="btn-grabar-rep" onclick="grabarRepeticion()" disabled>
+        ⏺️ Grabar repetición <span id="rep-num-btn">1</span>/3
+      </button>
+      <button class="btn btn-primary btn-full" id="btn-guardar-dtw" onclick="guardarPalabraDTW()" disabled>💾 Guardar palabra</button>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="resetCapturaDTW()">🔄 Reiniciar grabación</button>
+    </div>
+
+    <!-- Acceso rápido -->
+    <div class="card card-sm">
+      <h4 style="margin-bottom:.75rem">Acceso rápido</h4>
+      <div id="abecedario-btns" style="display:flex;flex-wrap:wrap;gap:.4rem;"></div>
+      <div id="palabras-btns"   style="display:none;flex-wrap:wrap;gap:.4rem;margin-top:.5rem"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// NORMALIZACIÓN — idéntica a NormalizadorMano en base_datos.py
+// ═══════════════════════════════════════════════════════════════
+/**
+ * Normaliza un vector de 63 floats en 3 capas:
+ *  1. Resta muñeca (punto 0) → independiente de posición
+ *  2. Escala por dist muñeca-dedo-medio (punto 9) → independiente de tamaño
+ *  3. Vector unitario → independiente de escala global
+ *
+ * Debe ser idéntica a NormalizadorMano._aplicar() en Python.
+ */
+function normalizarVector(v) {
+  // v = Float32Array o Array de 63 floats
+  const out = new Float32Array(v);   // copia
+
+  // Capa 1: restar muñeca (índice 0 → x,y,z = [0,1,2])
+  const wx = out[0], wy = out[1], wz = out[2];
+  for (let i = 0; i < 21; i++) {
+    out[i*3]     -= wx;
+    out[i*3 + 1] -= wy;
+    out[i*3 + 2] -= wz;
+  }
+
+  // Capa 2: escalar por distancia muñeca → dedo medio (punto 9)
+  const refX = out[9*3], refY = out[9*3 + 1];
+  const dist  = Math.sqrt(refX*refX + refY*refY);
+  if (dist > 1e-6) {
+    for (let i = 0; i < 63; i++) out[i] /= dist;
+  }
+
+  // Capa 3: vector unitario
+  let norma = 0;
+  for (let i = 0; i < 63; i++) norma += out[i]*out[i];
+  norma = Math.sqrt(norma);
+  if (norma > 1e-6) {
+    for (let i = 0; i < 63; i++) out[i] /= norma;
+  }
+
+  return Array.from(out);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACCESO RÁPIDO
+// ═══════════════════════════════════════════════════════════════
+const LETRAS   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const PALABRAS = ['HOLA','GRACIAS','SÍ','NO','POR FAVOR','BUENOS DÍAS','AYUDA'];
+
+document.getElementById('abecedario-btns').innerHTML =
+  LETRAS.split('').map(l =>
+    `<button class="btn btn-ghost btn-sm" onclick="seleccionarLetra('${l}')">${l}</button>`
+  ).join('');
+document.getElementById('palabras-btns').innerHTML =
+  PALABRAS.map(w =>
+    `<button class="btn btn-ghost btn-sm" onclick="seleccionarPalabra('${w}')">${w}</button>`
+  ).join('');
+
+// ═══════════════════════════════════════════════════════════════
+// MODO
+// ═══════════════════════════════════════════════════════════════
+let modoActual = 'letra';
+
+function cambiarModo(modo) {
+  modoActual = modo;
+  ['letra','palabra'].forEach(m => {
+    document.getElementById(`tab-${m}`).classList.toggle('active', m === modo);
+    document.getElementById(`panel-${m}-cam`).classList.toggle('activo', m === modo);
+    document.getElementById(`panel-${m}-ctrl`).classList.toggle('activo', m === modo);
+  });
+  document.getElementById('abecedario-btns').style.display = modo === 'letra'   ? 'flex'  : 'none';
+  document.getElementById('palabras-btns').style.display   = modo === 'palabra' ? 'flex'  : 'none';
+  resetCaptura(false); resetCapturaDTW(false);
+  setEstado('Activa la cámara y configura el gesto.');
+}
+
+function seleccionarLetra(l)  { cambiarModo('letra');   document.getElementById('gesto-nombre').value = l; document.getElementById('gesto-desc').value = `Letra ${l} del abecedario`; }
+function seleccionarPalabra(w){ cambiarModo('palabra'); document.getElementById('gesto-nombre').value = w; document.getElementById('gesto-desc').value = `Palabra con movimiento: ${w}`; }
+function setEstado(msg) { document.getElementById('captura-estado').innerHTML = `<span>📋</span><span>${msg}</span>`; }
+
+// ═══════════════════════════════════════════════════════════════
+// CÁMARA
+// ═══════════════════════════════════════════════════════════════
+let camStream = null;
+
+async function activarCamara() {
+  if (camStream) { desactivarCamara(); return; }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video:{width:640,height:480}, audio:false });
+    const video = document.getElementById('cam-video');
+    video.srcObject = camStream;
+    await video.play();
+    ['btn-activar-cam','btn-activar-cam-dtw'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = '⏹ Detener cámara';
+    });
+    document.getElementById('btn-iniciar-captura').disabled = false;
+    document.getElementById('btn-grabar-rep').disabled      = false;
+    setEstado('📷 Cámara activa. Configura el gesto y presiona captura.');
+    toast('Cámara activada', 'success');
+  } catch(e) { toast('No se pudo acceder a la cámara', 'error'); }
+}
+
+function desactivarCamara() {
+  camStream?.getTracks().forEach(t => t.stop());
+  document.getElementById('cam-video').srcObject = null;
+  camStream = null;
+  ['btn-activar-cam','btn-activar-cam-dtw'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '📷 Activar cámara';
+  });
+  document.getElementById('btn-iniciar-captura').disabled = true;
+  document.getElementById('btn-grabar-rep').disabled      = true;
+  resetCaptura(); resetCapturaDTW();
+}
+
+// ─── Captura frame y extrae landmarks del servidor ───────────
+function capturarFrameB64() {
+  const canvas = document.getElementById('cam-canvas');
+  const video  = document.getElementById('cam-video');
+  const ctx    = canvas.getContext('2d');
+  canvas.width = 640; canvas.height = 480;
+  ctx.save(); ctx.scale(-1,1);
+  ctx.drawImage(video, -640, 0, 640, 480);
+  ctx.restore();
+  return canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+}
+
+async function extraerYNormalizar(b64) {
+  /**
+   * Llama al servidor para obtener landmarks crudos de MediaPipe,
+   * luego aplica normalización 3 capas ANTES de devolver.
+   * Esto garantiza que lo que se guarda es comparable entre sesiones.
+   */
+  const res = await fetch('/api/admin/extraer-landmarks', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${Auth.token()}` },
+    body: JSON.stringify({ frame_b64: b64 })
+  });
+  const data = await res.json();
+  if (!data.landmarks || data.landmarks.length !== 63) return null;
+
+  // NORMALIZAR aquí, no delegar al Python al leer
+  return normalizarVector(data.landmarks);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODO LETRA — captura estática (30 muestras)
+// ═══════════════════════════════════════════════════════════════
+let muestras   = [];
+let capturando = false;
+
+function iniciarCaptura() {
+  const nombre = document.getElementById('gesto-nombre').value.trim();
+  if (!nombre) { toast('Ingresa el nombre del gesto', 'error'); return; }
+  if (!camStream) { toast('Activa la cámara primero', 'error'); return; }
+  resetCaptura(false); capturando = true;
+  document.getElementById('cuenta-sub').textContent = 'Mantén el gesto estático';
+  _cuentaRegresiva(3, () => {
+    setEstado('⏺️ Capturando... mantén la mano quieta.');
+    _capturarMuestrasLetra();
+  });
+}
+
+async function _capturarMuestrasLetra() {
+  for (let i = 0; i < 30 && capturando; i++) {
+    try {
+      const lm = await extraerYNormalizar(capturarFrameB64());
+      if (lm) { muestras.push(lm); _actualizarDots(muestras.length); }
+    } catch(e) {}
+    await _esperar(65);
+  }
+  capturando = false;
+  if (muestras.length >= 10) {
+    document.getElementById('btn-guardar').disabled = false;
+    setEstado(`✅ ${muestras.length} muestras normalizadas. Presiona "Guardar letra".`);
+    toast(`${muestras.length} muestras OK`, 'success');
+  } else {
+    setEstado('⚠️ Pocas muestras. Asegúrate de que la mano sea visible.');
+    toast('No se detectó mano en suficientes frames', 'error');
+  }
+}
+
+function _actualizarDots(n) {
+  document.getElementById('muestras-conteo').textContent  = n;
+  document.getElementById('captura-progress').style.width = (n/30*100) + '%';
+  document.getElementById('muestras-dots').innerHTML =
+    Array.from({length:30}, (_,i) =>
+      `<div class="muestra-dot ${i<n?'pulso':'pendiente'}"></div>`
+    ).join('');
+}
+
+async function guardarGesto() {
+  if (!muestras.length) { toast('Primero captura muestras', 'error'); return; }
+  const nombre = document.getElementById('gesto-nombre').value.trim().toUpperCase();
+  const desc   = document.getElementById('gesto-desc').value.trim();
+  // Promediar los vectores ya normalizados
+  const promedio = muestras[0].map((_,i) =>
+    muestras.reduce((s,m) => s + m[i], 0) / muestras.length
+  );
+  try {
+    await Api.post('/admin/gestos', {
+      nombre, tipo:'letter', descripcion:desc,
+      landmarks:promedio, muestras_usadas:muestras.length
+    });
+    toast(`Letra "${nombre}" guardada`, 'success');
+    resetCaptura();
+    document.getElementById('gesto-nombre').value = '';
+    document.getElementById('gesto-desc').value   = '';
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function resetCaptura(limpiarEstado = true) {
+  muestras = []; capturando = false;
+  document.getElementById('btn-guardar').disabled          = true;
+  document.getElementById('captura-progress').style.width  = '0%';
+  document.getElementById('muestras-conteo').textContent   = '0';
+  document.getElementById('muestras-dots').innerHTML       = '';
+  document.getElementById('cuenta-overlay').style.display  = 'none';
+  if (limpiarEstado) setEstado('Activa la cámara y elige un gesto para comenzar.');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODO PALABRA — captura DTW (3 repeticiones)
+// ═══════════════════════════════════════════════════════════════
+let secuenciasDTW = [];   // [ [[63f]×10], [[63f]×10], [[63f]×10] ]
+let repActual     = 0;
+let grabandoDTW   = false;
+
+async function grabarRepeticion() {
+  const nombre = document.getElementById('gesto-nombre').value.trim();
+  if (!nombre) { toast('Ingresa el nombre de la palabra', 'error'); return; }
+  if (!camStream) { toast('Activa la cámara primero', 'error'); return; }
+  if (grabandoDTW || repActual >= 3) return;
+
+  grabandoDTW = true;
+  document.getElementById('btn-grabar-rep').disabled = true;
+  document.getElementById(`rep-${repActual}`).classList.add('grabando');
+  document.getElementById('cuenta-sub').textContent = 'Prepárate para hacer el movimiento completo';
+  await _cuentaRegresivaAsync(3);
+
+  setEstado(`🔴 Grabando rep ${repActual+1}/3... ¡Haz el movimiento ahora!`);
+  document.getElementById('rec-badge').classList.add('visible');
+
+  // Capturar hasta 40 frames durante ~2.5s y normalizar cada uno
+  const framesNorm = [];
+  for (let i = 0; i < 40 && grabandoDTW; i++) {
+    try {
+      const lm = await extraerYNormalizar(capturarFrameB64());
+      if (lm) framesNorm.push(lm);
+    } catch(e) {}
+    document.getElementById('captura-progress-dtw').style.width =
+      ((repActual * 40 + i) / 120 * 100) + '%';
+    await _esperar(60);
+  }
+
+  document.getElementById('rec-badge').classList.remove('visible');
+
+  if (framesNorm.length >= 5) {
+    // Resamplear a 10 frames (ya normalizados)
+    const seq10 = _resamplear(framesNorm, 10);
+    secuenciasDTW.push(seq10);
+
+    document.getElementById(`rep-${repActual}`).classList.remove('grabando');
+    document.getElementById(`rep-${repActual}`).classList.add('lista');
+    repActual++;
+
+    if (repActual >= 3) {
+      document.getElementById('btn-guardar-dtw').disabled = false;
+      document.getElementById('btn-grabar-rep').disabled  = true;
+      document.getElementById('rep-hint').textContent     = '✅ 3 repeticiones listas. Guarda la palabra.';
+      setEstado('✅ 3 repeticiones capturadas. Presiona "Guardar palabra".');
+      toast('3 repeticiones capturadas', 'success');
+    } else {
+      document.getElementById('btn-grabar-rep').disabled = false;
+      document.getElementById('rep-num-btn').textContent = repActual + 1;
+      setEstado(`✅ Rep ${repActual}/3 lista. Haz la siguiente cuando estés listo.`);
+      toast(`Repetición ${repActual} capturada (${framesNorm.length} frames → 10)`, 'success');
+    }
+  } else {
+    document.getElementById(`rep-${repActual}`).classList.remove('grabando');
+    document.getElementById('btn-grabar-rep').disabled = false;
+    setEstado('⚠️ No se detectó mano. Inténtalo de nuevo.');
+    toast('Mano no detectada en suficientes frames', 'error');
+  }
+  grabandoDTW = false;
+}
+
+async function guardarPalabraDTW() {
+  if (secuenciasDTW.length < 3) { toast('Necesitas 3 repeticiones', 'error'); return; }
+  const nombre = document.getElementById('gesto-nombre').value.trim().toUpperCase();
+  const desc   = document.getElementById('gesto-desc').value.trim();
+
+  /**
+   * Estructura que espera base_datos.py _cargar_palabra():
+   *   secuencia: [
+   *     [[63f], [63f], ..., [63f]],   <- rep 1: 10 frames
+   *     [[63f], [63f], ..., [63f]],   <- rep 2: 10 frames
+   *     [[63f], [63f], ..., [63f]],   <- rep 3: 10 frames
+   *   ]
+   * cada elemento de secuenciasDTW ya ES esa lista de 10 frames.
+   * Los floats ya están normalizados (3 capas).
+   */
+  try {
+    await Api.post('/admin/gestos', {
+      nombre,
+      tipo:           'word',
+      descripcion:    desc || `Palabra con movimiento: ${nombre}`,
+      secuencia:      secuenciasDTW,          // [[[63f]×10], ...]
+      landmarks:      secuenciasDTW[0][0],    // primer frame, compatibilidad legacy
+      muestras_usadas: secuenciasDTW.length
+    });
+    toast(`Palabra "${nombre}" guardada con DTW (normalizada)`, 'success');
+    resetCapturaDTW();
+    document.getElementById('gesto-nombre').value = '';
+    document.getElementById('gesto-desc').value   = '';
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function resetCapturaDTW(limpiarEstado = true) {
+  secuenciasDTW = []; repActual = 0; grabandoDTW = false;
+  document.getElementById('btn-guardar-dtw').disabled          = true;
+  document.getElementById('btn-grabar-rep').disabled           = !camStream;
+  document.getElementById('rep-num-btn').textContent           = '1';
+  document.getElementById('captura-progress-dtw').style.width  = '0%';
+  document.getElementById('rec-badge').classList.remove('visible');
+  document.getElementById('rep-hint').textContent = 'Haz el movimiento completo de la seña en cada repetición';
+  [0,1,2].forEach(i => {
+    const d = document.getElementById(`rep-${i}`);
+    d.className = 'rep-dot pendiente'; d.textContent = i+1;
+  });
+  if (limpiarEstado) setEstado('Activa la cámara y configura la palabra.');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function _resamplear(frames, target) {
+  if (frames.length === target) return frames;
+  return Array.from({length: target}, (_, i) => {
+    const idx = i * (frames.length - 1) / (target - 1);
+    const lo  = Math.floor(idx), hi = Math.min(lo+1, frames.length-1);
+    const t   = idx - lo;
+    return frames[lo].map((v, j) => v*(1-t) + frames[hi][j]*t);
+  });
+}
+
+function _cuentaRegresiva(s, cb) {
+  let n = s;
+  document.getElementById('cuenta-overlay').style.display = 'flex';
+  document.getElementById('cuenta-num').textContent = n;
+  const iv = setInterval(() => {
+    n--;
+    if (n > 0) { document.getElementById('cuenta-num').textContent = n; }
+    else { clearInterval(iv); document.getElementById('cuenta-overlay').style.display='none'; cb(); }
+  }, 1000);
+}
+function _cuentaRegresivaAsync(s) { return new Promise(r => _cuentaRegresiva(s, r)); }
+function _esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+window.addEventListener('pagehide', desactivarCamara);
+</script>
+</body>
+</html>

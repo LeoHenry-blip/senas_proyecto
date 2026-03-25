@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Señas V2 — Panel Admin</title>
+<<<<<<< HEAD
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
   <script src="js/navbar.js"></script>
@@ -25,18 +26,71 @@
     }
     .cuenta-num { font-size: 7rem; font-weight: 900; color: var(--warning); line-height: 1; }
     .cuenta-sub { font-size: 1rem; color: #fff; margin-top: .5rem; }
+=======
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; }
 
-    .gesto-item {
-      display: flex; align-items: center; gap: .75rem;
-      padding: .6rem .75rem;
-      background: var(--bg-700); border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      transition: background var(--transition);
+    .admin-shell {
+      display: grid;
+      grid-template-rows: 48px 1fr;
+      grid-template-columns: 220px 1fr;
+      height: 100vh;
     }
-    .gesto-item:hover { background: var(--bg-600); }
-    .gesto-nombre { font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; min-width: 60px; }
-    .gesto-tipo { font-size: .72rem; }
+>>>>>>> dd0d296d0c7775e6bddd4f8ae6f159a19f269c02
 
+    /* NAVBAR — fila completa */
+    .navbar {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 1.25rem;
+      gap: .75rem;
+      background: var(--bg-800);
+      border-bottom: 1px solid var(--border);
+      z-index: 50;
+    }
+    .navbar-brand { font-weight: 700; font-size: .95rem; flex: 1; }
+    .navbar-nav   { display: flex; align-items: center; gap: .5rem; }
+
+    /* SIDEBAR */
+    .admin-sidebar {
+      grid-column: 1;
+      grid-row: 2;
+      background: var(--bg-800);
+      border-right: 1px solid var(--border);
+      padding: 1rem .75rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: .25rem;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      padding: .55rem .75rem;
+      border-radius: var(--radius-md);
+      font-size: .88rem;
+      font-weight: 500;
+      color: var(--text-300);
+      cursor: pointer;
+      transition: all .15s ease;
+      border: 1px solid transparent;
+      user-select: none;
+    }
+    .sidebar-item:hover  { background: var(--bg-700); color: var(--text-100); }
+    .sidebar-item.active {
+      background: rgba(79,142,247,.12);
+      border-color: rgba(79,142,247,.25);
+      color: var(--accent);
+    }
+    .sidebar-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+<<<<<<< HEAD
     .config-item {
       display: grid; grid-template-columns: 1fr auto;
       gap: .5rem; align-items: center;
@@ -55,41 +109,106 @@
       background: var(--success); transition: transform .1s ease;
     }
     .muestra-dot.pendiente { background: var(--bg-500); }
+=======
+    .sidebar-divider { height: 1px; background: var(--border); margin: .5rem 0; }
 
-    @keyframes pulso { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
-    .pulso { animation: pulso .3s ease; }
+    /* FRAME WRAP */
+    .frame-wrap {
+      grid-column: 2;
+      grid-row: 2;
+      position: relative;
+      overflow: hidden;
+    }
+    .frame-wrap iframe { width: 100%; height: 100%; border: none; }
+>>>>>>> dd0d296d0c7775e6bddd4f8ae6f159a19f269c02
+
+    /* Overlay de carga */
+    #frame-loading {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-900);
+      color: var(--text-300);
+      font-size: .9rem;
+      gap: .5rem;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #frame-loading.visible { display: flex; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
   </style>
 </head>
 <body>
 
+<<<<<<< HEAD
 <!-- LAYOUT (el navbar lo inyecta navbar.js automáticamente) -->
 <div class="admin-layout">
+=======
+<div class="admin-shell">
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="dashboard.html" style="color:var(--text-300);font-size:.82rem;text-decoration:none">
+      ← Dashboard
+    </a>
+    <span class="navbar-brand">⚙️ Panel Admin</span>
+    <div class="navbar-nav">
+      <span id="nav-nombre" style="font-size:.82rem;color:var(--text-300);margin-right:.5rem"></span>
+      <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Salir</button>
+    </div>
+  </nav>
+>>>>>>> dd0d296d0c7775e6bddd4f8ae6f159a19f269c02
 
   <!-- SIDEBAR — sin tocar -->
   <aside class="admin-sidebar">
-    <div class="admin-sidebar-item active" onclick="mostrarSeccion('entrenador')">
-      <span>🖐️</span> Entrenador de gestos
+
+    <div class="sidebar-item active" data-page="entrenador_gestos" onclick="navegar(this)">
+      <span class="icon">🖐️</span> Entrenador de gestos
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('gestos-lista')">
-      <span>📋</span> Gestos registrados
+
+    <div class="sidebar-item" data-page="gestos_registrados" onclick="navegar(this)">
+      <span class="icon">📋</span> Gestos registrados
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('configuracion')">
-      <span>🎛️</span> Configuración
+
+    <div class="sidebar-item" data-page="test_reconocimiento" onclick="navegar(this)">
+      <span class="icon">🧪</span> Test de reconocimiento
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('usuarios')">
-      <span>👥</span> Usuarios
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-item" data-page="configuracion" onclick="navegar(this)">
+      <span class="icon">🎛️</span> Configuración
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('estadisticas')">
-      <span>📊</span> Estadísticas
+
+    <div class="sidebar-item" data-page="usuarios" onclick="navegar(this)">
+      <span class="icon">👥</span> Usuarios
     </div>
-    <div class="admin-sidebar-item" onclick="mostrarSeccion('test-reconocimiento')">
-      <span>🧪</span> Test reconocimiento
+
+    <div class="sidebar-item" data-page="estadisticas" onclick="navegar(this)">
+      <span class="icon">📊</span> Estadísticas
     </div>
+
   </aside>
 
-  <!-- CONTENIDO -->
-  <main class="admin-content">
+  <!-- IFRAME -->
+  <div class="frame-wrap">
+    <iframe id="page-frame" src="admin_pages/entrenador_gestos.html"></iframe>
+    <div id="frame-loading">
+      <div class="spinner"></div> Cargando...
+    </div>
+  </div>
 
+<<<<<<< HEAD
     <!-- ENTRENADOR -->
     <section id="sec-entrenador">
       <h2 style="margin-bottom:1.5rem">🖐️ Entrenador de gestos</h2>
@@ -265,11 +384,17 @@
 <video id="cam-video-hidden" style="display:none" autoplay muted playsinline></video>
 <canvas id="cam-canvas-hidden" style="display:none" width="640" height="480"></canvas>
 
+=======
+</div>
+
+>>>>>>> dd0d296d0c7775e6bddd4f8ae6f159a19f269c02
 <script src="js/app.js"></script>
 <script>
+  // ── Auth guard ─────────────────────────────────────────────
   Auth.requerir();
-  if (!Auth.esAdmin()) { window.location.href = 'dashboard.html'; }
+  if (!Auth.esAdmin()) { window.location.replace('dashboard.html'); }
 
+<<<<<<< HEAD
   // Actualizar nombre en navbar (inyectado por navbar.js)
   const _navNombre = document.getElementById('nav-nombre');
   if (_navNombre) _navNombre.textContent = Auth.usuario().nombre;
@@ -653,6 +778,44 @@
 
   function testDetener() { clearInterval(testTimer); testStream?.getTracks().forEach(t=>t.stop()); document.getElementById('test-video').srcObject=null; document.getElementById('test-camara-box').style.borderColor='var(--border)'; toast('Test detenido','info'); }
   function testLimpiar() { testHistorial=[];testUltimaLetra='';document.getElementById('test-historial').innerHTML='';document.getElementById('test-letra').textContent='—';document.getElementById('test-conf-bar').style.width='0%';document.getElementById('test-conf-pct').textContent='0%'; }
+=======
+  document.getElementById('nav-nombre').textContent = Auth.usuario()?.nombre || '';
+
+  // ── Navegación ─────────────────────────────────────────────
+  const frame   = document.getElementById('page-frame');
+  const loading = document.getElementById('frame-loading');
+
+  function navegar(el) {
+    const page = el.dataset.page;
+    if (!page) return;
+
+    // Activo en sidebar
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+
+    // Mostrar spinner + cambiar iframe
+    loading.classList.add('visible');
+    frame.src = `admin_pages/${page}.html`;
+  }
+
+  frame.addEventListener('load', () => loading.classList.remove('visible'));
+
+  // ── Navegación directa por URL: admin.html?page=estadisticas
+  (() => {
+    const page = new URLSearchParams(window.location.search).get('page');
+    if (page) {
+      const item = document.querySelector(`[data-page="${page}"]`);
+      if (item) navegar(item);
+    }
+  })();
+
+  // ── API para que las sub-páginas naveguen desde el iframe ──
+  // Uso: window.parent.adminNavegar('configuracion')
+  window.adminNavegar = (page) => {
+    const item = document.querySelector(`[data-page="${page}"]`);
+    if (item) navegar(item);
+  };
+>>>>>>> dd0d296d0c7775e6bddd4f8ae6f159a19f269c02
 </script>
 </body>
 </html>

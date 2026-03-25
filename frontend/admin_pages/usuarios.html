@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usuarios</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body {
+      background: var(--bg-900); color: var(--text-100);
+      min-height: 100vh; padding: 1.75rem 2rem; overflow-y: auto;
+    }
+
+    .toolbar {
+      display: flex; align-items: center; gap: .75rem;
+      margin-bottom: 1.25rem; flex-wrap: wrap;
+    }
+    .toolbar-spacer { flex: 1; }
+
+    .search-input {
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: .45rem .75rem;
+      color: var(--text-100); font-size: .85rem;
+      outline: none; width: 240px; transition: border-color .15s;
+    }
+    .search-input:focus   { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text-300); }
+
+    /* Tabla */
+    .tabla-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+    .tabla { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .tabla thead tr { background: var(--bg-700); }
+    .tabla th {
+      padding: .65rem 1rem; text-align: left;
+      font-size: .75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--text-300);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .tabla td {
+      padding: .7rem 1rem; border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .tabla tbody tr { background: var(--bg-800); transition: background .1s; }
+    .tabla tbody tr:hover { background: var(--bg-700); }
+    .tabla tbody tr:last-child td { border-bottom: none; }
+
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .85rem; flex-shrink: 0;
+    }
+    .user-info { display: flex; align-items: center; gap: .6rem; }
+    .user-name  { font-weight: 600; color: var(--text-100); }
+    .user-email { font-size: .75rem; color: var(--text-300); margin-top: .1rem; }
+
+    .role-select {
+      background: var(--bg-600); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: .25rem .5rem;
+      color: var(--text-100); font-size: .8rem; outline: none;
+      cursor: pointer; transition: border-color .15s;
+    }
+    .role-select:focus { border-color: var(--accent); }
+
+    .empty-row td {
+      text-align: center; padding: 3rem; color: var(--text-300);
+    }
+
+    /* Paginación simple */
+    .paginacion {
+      display: flex; justify-content: flex-end; align-items: center;
+      gap: .5rem; margin-top: 1rem; font-size: .82rem; color: var(--text-300);
+    }
+  </style>
+</head>
+<body>
+
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem">
+  <h2>👥 Usuarios del sistema</h2>
+</div>
+
+<div class="toolbar">
+  <input class="search-input" id="search-input" type="text"
+         placeholder="🔍 Buscar por nombre o email..."
+         oninput="filtrarUsuarios()">
+  <div class="toolbar-spacer"></div>
+  <span class="text-sm text-muted" id="conteo-label"></span>
+  <button class="btn btn-primary btn-sm" onclick="cargarUsuarios()">🔄 Actualizar</button>
+</div>
+
+<div class="tabla-wrap">
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th>Usuario</th>
+        <th>Rol</th>
+        <th>Estado</th>
+        <th>Último login</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="usuarios-body">
+      <tr class="empty-row"><td colspan="5">Cargando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="paginacion" id="paginacion"></div>
+
+<script src="../js/app.js"></script>
+<script>
+  let todosUsuarios = [];
+
+  async function cargarUsuarios() {
+    try {
+      const { usuarios } = await Api.get('/admin/usuarios');
+      todosUsuarios = usuarios;
+      document.getElementById('conteo-label').textContent = `${usuarios.length} usuarios`;
+      filtrarUsuarios();
+    } catch(e) {
+      document.getElementById('usuarios-body').innerHTML =
+        `<tr class="empty-row"><td colspan="5">Error: ${e.message}</td></tr>`;
+    }
+  }
+
+  function filtrarUsuarios() {
+    const q = document.getElementById('search-input').value.trim().toLowerCase();
+    const lista = q
+      ? todosUsuarios.filter(u =>
+          u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+        )
+      : todosUsuarios;
+    renderUsuarios(lista);
+  }
+
+  function renderUsuarios(usuarios) {
+    if (!usuarios.length) {
+      document.getElementById('usuarios-body').innerHTML =
+        '<tr class="empty-row"><td colspan="5">No hay usuarios que coincidan</td></tr>';
+      return;
+    }
+
+    document.getElementById('usuarios-body').innerHTML = usuarios.map(u => {
+      const inicial  = (u.nombre || '?')[0].toUpperCase();
+      const colorIdx = u.id % 6;
+      const colores  = ['#4f8ef7','#22c55e','#f59e0b','#a78bfa','#38d9a9','#fb923c'];
+      const color    = colores[colorIdx];
+
+      return `
+        <tr id="row-${u.id}">
+          <td>
+            <div class="user-info">
+              <div class="user-avatar" style="background:${color}">${inicial}</div>
+              <div>
+                <div class="user-name">${u.nombre}</div>
+                <div class="user-email">${u.email}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <select class="role-select" onchange="cambiarRol(${u.id}, this.value)">
+              <option value="usuario" ${u.rol==='usuario'?'selected':''}>👤 Usuario</option>
+              <option value="admin"   ${u.rol==='admin'?'selected':''}>🛡️ Admin</option>
+            </select>
+          </td>
+          <td>
+            <span class="badge ${u.activo?'badge-green':'badge-red'}">
+              ${u.activo ? '● Activo' : '● Baneado'}
+            </span>
+          </td>
+          <td class="text-sm text-muted" style="white-space:nowrap">
+            ${u.ultimo_login ? formatFecha(u.ultimo_login) : '—'}
+          </td>
+          <td>
+            <button class="btn btn-ghost btn-sm"
+                    onclick="toggleActivo(${u.id}, ${u.activo})">
+              ${u.activo ? '⛔ Banear' : '✅ Activar'}
+            </button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  async function cambiarRol(id, rol) {
+    try {
+      await Api.patch(`/admin/usuarios/${id}`, { rol });
+      toast('Rol actualizado', 'success');
+      // Actualizar en cache local
+      const u = todosUsuarios.find(u => u.id === id);
+      if (u) u.rol = rol;
+    } catch(e) {
+      toast(e.message, 'error');
+      cargarUsuarios(); // Revertir
+    }
+  }
+
+  async function toggleActivo(id, activo) {
+    try {
+      await Api.patch(`/admin/usuarios/${id}`, { activo: activo ? 0 : 1 });
+      // Actualizar localmente
+      const u = todosUsuarios.find(u => u.id === id);
+      if (u) u.activo = activo ? 0 : 1;
+      filtrarUsuarios();
+      toast(`Usuario ${activo ? 'baneado' : 'activado'}`, 'success');
+    } catch(e) { toast(e.message, 'error'); }
+  }
+
+  cargarUsuarios();
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadísticas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/main.css">
+  <style>
+    body {
+      background: var(--bg-900); color: var(--text-100);
+      min-height: 100vh; padding: 1.75rem 2rem; overflow-y: auto;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.25rem 1.5rem;
+      display: flex; flex-direction: column; gap: .5rem;
+      transition: border-color .15s, transform .15s;
+      animation: fadeUp .3s ease both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+    .stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+    .stat-icon {
+      width: 44px; height: 44px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+    }
+    .stat-value {
+      font-size: 2.2rem; font-weight: 900;
+      font-family: var(--font-mono); line-height: 1;
+      color: var(--text-100);
+    }
+    .stat-label {
+      font-size: .78rem; color: var(--text-300);
+      font-weight: 500; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .stat-delta {
+      font-size: .75rem; color: var(--success);
+      font-weight: 600; margin-top: .1rem;
+    }
+
+    .section-title {
+      font-size: .75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-300);
+      margin-bottom: 1rem; padding-bottom: .4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Tabla actividad reciente */
+    .actividad-tabla { width: 100%; border-collapse: collapse; font-size: .84rem; }
+    .actividad-tabla th {
+      text-align: left; padding: .5rem .75rem;
+      font-size: .73rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--text-300);
+      border-bottom: 1px solid var(--border);
+    }
+    .actividad-tabla td {
+      padding: .6rem .75rem; border-bottom: 1px solid var(--border);
+      color: var(--text-200);
+    }
+    .actividad-tabla tbody tr:hover { background: var(--bg-700); }
+    .actividad-tabla tbody tr:last-child td { border-bottom: none; }
+
+    .refresh-hint {
+      font-size: .75rem; color: var(--text-400); margin-top: .4rem;
+    }
+
+    /* Skeleton loader */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-700) 25%, var(--bg-600) 50%, var(--bg-700) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: var(--radius-md);
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  </style>
+</head>
+<body>
+
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem">
+  <div>
+    <h2>📊 Estadísticas del sistema</h2>
+    <p class="text-sm text-muted" style="margin-top:.25rem" id="ultima-actualizacion"></p>
+  </div>
+  <button class="btn btn-primary btn-sm" onclick="cargarEstadisticas()">🔄 Actualizar</button>
+</div>
+
+<!-- Stat Cards -->
+<div class="stats-grid" id="stats-grid">
+  <!-- Skeletons mientras carga -->
+  ${Array.from({length:5}, () => `
+    <div class="stat-card">
+      <div class="skeleton" style="width:44px;height:44px;border-radius:8px"></div>
+      <div class="skeleton" style="width:60%;height:2rem;margin-top:.25rem"></div>
+      <div class="skeleton" style="width:80%;height:.8rem"></div>
+    </div>
+  `).join('')}
+</div>
+
+
+
+<!-- Accesos rápidos -->
+<div>
+  <div class="section-title">Accesos rápidos</div>
+  <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+    <button class="btn btn-ghost btn-sm" onclick="window.parent.adminNavegar('entrenador_gestos')">
+      🖐️ Ir al entrenador
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="window.parent.adminNavegar('gestos_registrados')">
+      📋 Ver todos los gestos
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="window.parent.adminNavegar('test_reconocimiento')">
+      🧪 Abrir test
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="window.parent.adminNavegar('usuarios')">
+      👥 Gestionar usuarios
+    </button>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+  const STAT_CONFIG = [
+    { key:'usuarios',         icon:'👥', label:'Usuarios totales',   color:'rgba(79,142,247,.15)'  },
+    { key:'reuniones',        icon:'📞', label:'Reuniones creadas',   color:'rgba(34,197,94,.15)'   },
+    { key:'reuniones_activas',icon:'🟢', label:'Reuniones activas',   color:'rgba(245,158,11,.15)'  },
+    { key:'mensajes',         icon:'💬', label:'Mensajes enviados',   color:'rgba(192,132,252,.15)' },
+    { key:'gestos',           icon:'🖐️', label:'Gestos registrados',  color:'rgba(56,217,169,.15)'  },
+  ];
+
+  async function cargarEstadisticas() {
+    // Mostrar skeletons
+    document.getElementById('stats-grid').innerHTML = Array.from({length:5}, () => `
+      <div class="stat-card">
+        <div class="skeleton" style="width:44px;height:44px;border-radius:8px"></div>
+        <div class="skeleton" style="width:60%;height:2rem;margin-top:.5rem"></div>
+        <div class="skeleton" style="width:80%;height:.8rem;margin-top:.25rem"></div>
+      </div>`).join('');
+
+    try {
+      const s = await Api.get('/admin/stats');
+
+      // Stat cards
+      document.getElementById('stats-grid').innerHTML = STAT_CONFIG.map((cfg, i) => `
+        <div class="stat-card" style="animation-delay:${i*60}ms">
+          <div class="stat-icon" style="background:${cfg.color}">${cfg.icon}</div>
+          <div class="stat-value">${fmt(s[cfg.key] ?? 0)}</div>
+          <div class="stat-label">${cfg.label}</div>
+        </div>
+      `).join('');
+
+      
+      // Timestamp
+      document.getElementById('ultima-actualizacion').textContent =
+        `Última actualización: ${new Date().toLocaleTimeString()}`;
+
+    } catch(e) {
+      document.getElementById('stats-grid').innerHTML =
+        `<div class="text-muted" style="grid-column:1/-1">Error al cargar: ${e.message}</div>`;
+    }
+  }
+
+  // Formato de números grandes
+  function fmt(n) {
+    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+    if (n >= 1000)    return (n/1000).toFixed(1) + 'K';
+    return n;
+  }
+
+  cargarEstadisticas();
+
+  // Auto-refresh cada 60 segundos si la página sigue visible
+  const autoRefresh = setInterval(() => {
+    if (document.visibilityState === 'visible') cargarEstadisticas();
+  }, 60000);
+
+  window.addEventListener('pagehide', () => clearInterval(autoRefresh));
+</script>
+</body>
+</html>
