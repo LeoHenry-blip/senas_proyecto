@@ -3,216 +3,198 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Señas V2 — Iniciar sesión</title>
+  <title>Señas V2 — Traducción de Lenguaje de Señas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
-  <script src="js/navbar.js"></script>
-  <style>
-    /* En el login el navbar se oculta — es una pantalla de entrada */
-    .navbar { display: none !important; }
-
-    .login-wrap {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-    }
-    .login-hero {
-      background: linear-gradient(135deg, #0a0f1a 0%, #121e38 100%);
-      display: flex; flex-direction: column; justify-content: center;
-      padding: 4rem;
-      border-right: 1px solid var(--border);
-      position: relative; overflow: hidden;
-    }
-    .login-hero::before {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 30% 50%, rgba(99,102,241,.14) 0%, transparent 70%);
-    }
-    .login-hero::after {
-      content: ''; position: absolute;
-      bottom: -80px; right: -80px;
-      width: 300px; height: 300px;
-      background: radial-gradient(circle, rgba(20,184,166,.08) 0%, transparent 70%);
-    }
-    .hero-emoji { font-size: 5rem; margin-bottom: 1.5rem; }
-    .hero-title {
-      font-size: 2.6rem; font-weight: 800;
-      letter-spacing: -.04em; line-height: 1.15;
-      margin-bottom: 1rem;
-    }
-    .hero-sub { color: var(--text-200); font-size: 1rem; max-width: 360px; line-height: 1.65; }
-    .feature-list { margin-top: 2.25rem; display: flex; flex-direction: column; gap: .65rem; }
-    .feature-item { display: flex; align-items: center; gap: .75rem; color: var(--text-200); font-size: .88rem; }
-    .feature-dot  { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; box-shadow: 0 0 6px var(--accent); }
-
-    .login-form-wrap {
-      display: flex; align-items: center; justify-content: center;
-      padding: 2rem; background: var(--bg-900);
-    }
-    .login-form-box { width: 100%; max-width: 400px; }
-    .login-form-box h2 { margin-bottom: .4rem; }
-    .login-form-box .subtitle { color: var(--text-300); margin-bottom: 2rem; font-size: .9rem; }
-
-    .form-group { margin-bottom: 1rem; }
-
-    .tab-switch {
-      display: flex; gap: 0;
-      background: var(--bg-700);
-      border-radius: var(--radius-md);
-      padding: 4px; margin-bottom: 1.5rem;
-      border: 1px solid var(--border);
-    }
-    .tab-btn {
-      flex: 1; padding: .5rem; text-align: center;
-      border: none; background: transparent; cursor: pointer;
-      border-radius: var(--radius-sm);
-      color: var(--text-300); font-size: .88rem; font-weight: 600;
-      transition: all var(--transition); font-family: var(--font);
-    }
-    .tab-btn.active { background: var(--bg-600); color: var(--text-100); box-shadow: var(--shadow-sm); }
-
-    .divider-text {
-      display: flex; align-items: center; gap: .75rem;
-      color: var(--text-300); font-size: .8rem; margin: 1.25rem 0;
-    }
-    .divider-text::before, .divider-text::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-    .btn-google {
-      display: flex; align-items: center; justify-content: center;
-      gap: .75rem; width: 100%; padding: .65rem;
-      background: var(--bg-700); border: 1px solid var(--border);
-      border-radius: var(--radius-md); color: var(--text-100);
-      font-size: .9rem; font-weight: 500; cursor: pointer;
-      transition: all var(--transition); font-family: var(--font);
-    }
-    .btn-google:hover { background: var(--bg-600); border-color: var(--border-light); transform: translateY(-1px); }
-
-    @media (max-width: 768px) {
-      .login-wrap { grid-template-columns: 1fr; }
-      .login-hero  { display: none; }
-    }
-  </style>
+  <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
-<div class="login-wrap">
 
-  <!-- HERO -->
-  <div class="login-hero">
-    <div class="hero-emoji">🤟</div>
-    <h1 class="hero-title">Sistema de Traducción de Señas</h1>
-    <p class="hero-sub">Plataforma de comunicación en tiempo real para personas sordas y oyentes.</p>
-    <div class="feature-list">
-      <div class="feature-item"><span class="feature-dot"></span>Reconocimiento de lenguaje de señas con IA</div>
-      <div class="feature-item"><span class="feature-dot"></span>Chat y videollamadas en tiempo real</div>
-      <div class="feature-item"><span class="feature-dot"></span>Corrección inteligente de frases</div>
-      <div class="feature-item"><span class="feature-dot"></span>Subtítulos automáticos para oyentes</div>
-      <div class="feature-item"><span class="feature-dot"></span>Panel de entrenamiento de gestos</div>
-    </div>
+<div class="lp-bg-canvas"><div class="orb-purple"></div></div>
+<div class="lp-noise"></div>
+
+<!-- NAVBAR -->
+<nav class="lp-nav">
+  <a href="index.html" class="lp-nav-brand">
+    <img src="https://cdn-icons-png.flaticon.com/512/8750/8750693.png" alt="Señas V2" style="height:32px; width:auto; display:block;">
+    Señas<span>V2</span>
+  </a>
+  <div class="lp-nav-links">
+    <a href="#features" class="lp-nav-link">Características</a>
+    <a href="#como-funciona" class="lp-nav-link">Cómo funciona</a>
   </div>
+  <a href="login.html" class="lp-nav-cta">Iniciar sesión →</a>
+</nav>
 
-  <!-- FORMULARIO -->
-  <div class="login-form-wrap">
-    <div class="login-form-box">
-      <h2>Bienvenido</h2>
-      <p class="subtitle">Accede a tu cuenta o créate una nueva</p>
+<div class="lp-wrapper">
 
-      <div class="tab-switch">
-        <button class="tab-btn active" onclick="mostrarTab('login')">Iniciar sesión</button>
-        <button class="tab-btn"       onclick="mostrarTab('registro')">Registrarse</button>
-      </div>
-
-      <!-- LOGIN -->
-      <div id="tab-login">
-        <div class="form-group input-group">
-          <label>Correo electrónico</label>
-          <input id="login-email" class="input" type="email" placeholder="usuario@email.com">
-        </div>
-        <div class="form-group input-group">
-          <label>Contraseña</label>
-          <input id="login-password" class="input" type="password" placeholder="Tu contraseña">
-        </div>
-        <button class="btn btn-primary btn-full btn-lg" onclick="hacerLogin()">Entrar</button>
-
-        <div class="divider-text">o continúa con</div>
-
-        <button class="btn-google" onclick="loginGoogle()">
-          <svg width="18" height="18" viewBox="0 0 48 48">
-            <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.1 30.2 0 24 0 14.7 0 6.7 5.4 2.8 13.3l7.8 6.1C12.5 13 17.8 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.6 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 6.9-10.1 6.9-17z"/>
-            <path fill="#FBBC05" d="M10.6 28.4A14.5 14.5 0 0 1 9.5 24c0-1.5.3-3 .8-4.4L2.5 13.5A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.5l8.1-6.1z"/>
-            <path fill="#34A853" d="M24 48c6.5 0 12-2.1 16-5.8l-7.5-5.8c-2.1 1.5-4.8 2.3-8.5 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.8 6A23.9 23.9 0 0 0 24 48z"/>
-          </svg>
-          Continuar con Google
-        </button>
-      </div>
-
-      <!-- REGISTRO -->
-      <div id="tab-registro" style="display:none">
-        <div class="form-group input-group">
-          <label>Nombre completo</label>
-          <input id="reg-nombre" class="input" type="text" placeholder="Tu nombre">
-        </div>
-        <div class="form-group input-group">
-          <label>Correo electrónico</label>
-          <input id="reg-email" class="input" type="email" placeholder="usuario@email.com">
-        </div>
-        <div class="form-group input-group">
-          <label>Contraseña</label>
-          <input id="reg-password" class="input" type="password" placeholder="Mínimo 6 caracteres">
-        </div>
-        <button class="btn btn-success btn-full btn-lg" onclick="hacerRegistro()">Crear cuenta</button>
-      </div>
-
-    </div>
+ <!-- HERO -->
+<section class="hero">
+  <h1 class="hero-title">
+    Traducción de Lenguaje<br>de <em>Señas en Tiempo Real</em>
+  </h1>
+  <p class="hero-sub">
+    Conectamos personas sordas y oyentes mediante inteligencia artificial.
+    Comunicación sin barreras, accesible y fluida.
+  </p>
+  <div class="hero-actions">
+    <a href="login.html" class="btn btn-primary btn-lg">
+      Iniciar sesión
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
   </div>
+  <div class="hero-emoji-wrap">
+    <div class="hero-emoji-ring"></div>
+    <div class="hero-emoji-ring2"></div>
+    <img
+      src="https://cdn-icons-png.flaticon.com/512/8750/8750693.png"
+      alt="Lenguaje de señas"
+      class="hero-emoji-main"
+      style="width: clamp(5rem, 10vw, 9rem); height: auto; object-fit: contain; filter: drop-shadow(0 0 40px rgba(59,130,246,.5));"
+    >
+  </div>
+</section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features">
+    <div class="reveal">
+      <div class="section-tag">Características</div>
+      <h2 class="section-title">Todo lo que necesitas<br>en una sola plataforma</h2>
+      <p class="section-sub">Herramientas diseñadas para romper las barreras de comunicación entre comunidades sordas y oyentes.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card blue reveal reveal-delay-1">
+        <div class="feat-icon">🎯</div>
+        <h3>Reconocimiento en Tiempo Real</h3>
+        <p>Detecta y traduce gestos de lenguaje de señas al instante usando modelos de visión por computadora entrenados específicamente.</p>
+      </div>
+      <div class="feat-card green reveal reveal-delay-2">
+        <div class="feat-icon">💬</div>
+        <h3>Comunicación Accesible</h3>
+        <p>Chat y videollamadas con subtítulos automáticos. Elimina las barreras de comunicación entre personas sordas y oyentes.</p>
+      </div>
+      <div class="feat-card purple reveal reveal-delay-3">
+        <div class="feat-icon">🧠</div>
+        <h3>IA Integrada</h3>
+        <p>Corrección semántica de frases, sugerencias contextuales y mejora continua del modelo con cada interacción.</p>
+      </div>
+      <div class="feat-card teal reveal reveal-delay-4">
+        <div class="feat-icon">🎓</div>
+        <h3>Panel de Entrenamiento</h3>
+        <p>Contribuye y mejora el modelo enviando tus propios gestos. La plataforma aprende con la comunidad.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section class="how-it-works" id="como-funciona">
+    <div class="how-inner">
+      <div class="reveal">
+        <div class="section-tag">Proceso</div>
+        <h2 class="section-title">¿Cómo funciona?</h2>
+        <p class="section-sub" style="margin:0 auto;">Tres pasos simples para una comunicación sin barreras.</p>
+      </div>
+      <div class="steps-row">
+        <div class="step-item reveal reveal-delay-1">
+          <div class="step-num">👁️</div>
+          <h4>Captura</h4>
+          <p>Tu cámara detecta los movimientos de tus manos en tiempo real.</p>
+        </div>
+        <div class="step-item reveal reveal-delay-2">
+          <div class="step-num">⚡</div>
+          <h4>Procesamiento</h4>
+          <p>La IA analiza el gesto y lo convierte en texto en milisegundos.</p>
+        </div>
+        <div class="step-item reveal reveal-delay-3">
+          <div class="step-num">🔊</div>
+          <h4>Comunicación</h4>
+          <p>El mensaje llega al interlocutor como texto, voz o subtítulo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BENTO GRID -->
+  <section class="bento">
+    <div class="reveal">
+      <div class="section-tag">Plataforma</div>
+      <h2 class="section-title">Construido para escalar</h2>
+      <p class="section-sub">Infraestructura robusta pensada para instituciones, familias y usuarios individuales.</p>
+    </div>
+    <div class="bento-grid">
+      <div class="bento-card bento-1 reveal reveal-delay-1">
+        <div class="bento-tag">Reconocimiento</div>
+        <h3>Motor de detección gestual en tiempo real</h3>
+        <p>Procesamiento con latencia inferior a 100ms. Compatible con iluminación baja y múltiples ángulos de cámara.</p>
+        <div class="bento-visual">
+          <div class="signal-bars">
+            <div class="signal-bar" style="height:55%"></div>
+            <div class="signal-bar" style="height:80%"></div>
+            <div class="signal-bar" style="height:45%"></div>
+            <div class="signal-bar" style="height:95%"></div>
+            <div class="signal-bar" style="height:60%"></div>
+            <div class="signal-bar" style="height:75%"></div>
+            <div class="signal-bar" style="height:40%"></div>
+            <div class="signal-bar" style="height:88%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="bento-card bento-2 reveal reveal-delay-2">
+        <div class="bento-tag">Salas</div>
+        <h3>Salas de reunión inclusivas</h3>
+        <p>Crea salas privadas con subtítulos automáticos para todos los participantes. Sin instalar nada extra.</p>
+      </div>
+      <div class="bento-card bento-3 reveal reveal-delay-1">
+        <div class="bento-tag">IA</div>
+        <h3>Corrección semántica</h3>
+        <p>El modelo infiere el contexto para producir frases naturales y fluidas.</p>
+      </div>
+      <div class="bento-card bento-4 reveal reveal-delay-2">
+        <div class="bento-tag">Historial</div>
+        <h3>Registro de conversaciones</h3>
+        <p>Accede a tus chats y transcripciones en cualquier momento desde tu perfil.</p>
+      </div>
+      <div class="bento-card bento-5 reveal reveal-delay-3">
+        <div class="bento-tag">Gestos</div>
+        <h3>Entrena nuevos gestos</h3>
+        <p>Amplía el vocabulario de la IA contribuyendo con tus propias señas personalizadas.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="lp-footer">
+    <div class="lp-footer-brand">Derechos Reservados a Grupo Analisis Fun<span></span></div>
+    <div class="lp-footer-note">Sistema de Traducción de Lenguaje de Señas · Fundacion Salesiana</div>
+  </footer>
+
 </div>
 
 <div id="toast-container"></div>
 <script src="js/app.js"></script>
 <script>
-  Auth.redirigirSiLogueado();
-
-  function mostrarTab(tab) {
-    document.getElementById('tab-login').style.display    = tab === 'login'    ? '' : 'none';
-    document.getElementById('tab-registro').style.display = tab === 'registro' ? '' : 'none';
-    document.querySelectorAll('.tab-btn').forEach((b, i) => {
-      b.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'registro' && i === 1));
+  /* Scroll reveal */
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
     });
-  }
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-  async function hacerLogin() {
-    const email    = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    if (!email || !password) { toast('Completa todos los campos', 'error'); return; }
-    try {
-      const res = await Api.post('/auth/login', { email, password });
-      Auth.guardar(res.token, res.usuario);
-      toast('¡Bienvenido!', 'success');
-      setTimeout(() => window.location.href = '/dashboard.html', 600);
-    } catch (e) { toast(e.message, 'error'); }
-  }
+  /* Smooth scroll */
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const t = document.querySelector(a.getAttribute('href'));
+      if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
 
-  async function hacerRegistro() {
-    const nombre   = document.getElementById('reg-nombre').value.trim();
-    const email    = document.getElementById('reg-email').value.trim();
-    const password = document.getElementById('reg-password').value;
-    if (!nombre || !email || !password) { toast('Completa todos los campos', 'error'); return; }
-    if (password.length < 6) { toast('La contraseña debe tener al menos 6 caracteres', 'error'); return; }
-    try {
-      await Api.post('/auth/registro', { nombre, email, password });
-      toast('Cuenta creada. Inicia sesión.', 'success');
-      mostrarTab('login');
-      document.getElementById('login-email').value = email;
-    } catch (e) { toast(e.message, 'error'); }
-  }
-
-  function loginGoogle() { toast('Google OAuth: configura CLIENT_ID en producción', 'info'); }
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      const activo = document.getElementById('tab-login').style.display !== 'none';
-      if (activo) hacerLogin(); else hacerRegistro();
-    }
+  /* Sombra navbar al scroll */
+  window.addEventListener('scroll', () => {
+    const nav = document.querySelector('.lp-nav');
+    if (nav) nav.style.boxShadow = window.scrollY > 20 ? '0 4px 32px rgba(0,0,0,.35)' : 'none';
   });
 </script>
 </body>

@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Señas V2 — Iniciar sesión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+
+  <style>
+    /* ══════════════════════════════════════════════
+       BASE
+    ══════════════════════════════════════════════ */
+    .navbar { display: none !important; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      background: #07040f;
+      color: #f0eaff;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+    }
+
+    /* ══════════════════════════════════════════════
+       LAYOUT 50/50
+    ══════════════════════════════════════════════ */
+    .login-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    /* ══════════════════════════════════════════════
+       LADO IZQUIERDO — FORMULARIO
+    ══════════════════════════════════════════════ */
+    .left-panel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 3.5rem;
+      position: relative;
+      background: linear-gradient(160deg, #0d0718 0%, #120a1e 50%, #0a0d1a 100%);
+      overflow: hidden;
+    }
+
+    /* Orbes de fondo */
+    .left-panel::before {
+      content: '';
+      position: absolute;
+      top: -180px; left: -120px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(139,92,246,.12) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .left-panel::after {
+      content: '';
+      position: absolute;
+      bottom: -150px; right: -100px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(236,72,153,.08) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    /* Tarjeta de formulario */
+    .form-card {
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+      z-index: 1;
+      animation: fadeUp .6s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(24px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* Logo / marca */
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: 2.5rem;
+    }
+    .brand-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 16px rgba(124,58,237,.4);
+    }
+    .brand-name {
+      font-size: .95rem; font-weight: 700;
+      letter-spacing: -.02em;
+      color: #e9d5ff;
+    }
+    .brand-name span { color: rgba(233,213,255,.45); font-weight: 400; }
+
+    /* Encabezado */
+    .form-heading { margin-bottom: 2rem; }
+    .form-heading h1 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -.04em;
+      line-height: 1.2;
+      color: #f5f0ff;
+      margin-bottom: .5rem;
+    }
+    .form-heading p {
+      font-size: .88rem;
+      color: rgba(200,180,255,.5);
+      font-weight: 400;
+    }
+
+    /* Botón Google */
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .75rem;
+      width: 100%;
+      padding: .78rem 1rem;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      color: #e9d5ff;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background .2s, border-color .2s, transform .2s, box-shadow .2s;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .btn-google::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 40%, rgba(139,92,246,.06) 100%);
+      pointer-events: none;
+    }
+    .btn-google:hover {
+      background: rgba(139,92,246,.12);
+      border-color: rgba(139,92,246,.35);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124,58,237,.2);
+    }
+    .btn-google:active { transform: translateY(0); }
+    .btn-google .g-spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.2);
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      flex-shrink: 0;
+    }
+    .btn-google.loading { opacity:.7; pointer-events:none; }
+    .btn-google.loading .g-spinner { display:block; }
+    .btn-google.loading .g-icon   { display:none; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Separador */
+    .sep {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      margin-bottom: 1.5rem;
+      color: rgba(200,180,255,.25);
+      font-size: .78rem;
+      letter-spacing: .06em;
+    }
+    .sep::before, .sep::after {
+      content: ''; flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(139,92,246,.2), transparent);
+    }
+
+    /* Grupos de input */
+    .field { margin-bottom: 1rem; }
+    .field label {
+      display: block;
+      font-size: .75rem;
+      font-weight: 600;
+      color: rgba(200,180,255,.55);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: .45rem;
+    }
+    .field-wrap {
+      position: relative;
+    }
+    .field-wrap .field-icon {
+      position: absolute;
+      left: 1rem; top: 50%;
+      transform: translateY(-50%);
+      color: rgba(139,92,246,.5);
+      pointer-events: none;
+      transition: color .2s;
+    }
+    .field-input {
+      width: 100%;
+      background: rgba(139,92,246,.06);
+      border: 1px solid rgba(139,92,246,.15);
+      border-radius: 12px;
+      padding: .78rem 1rem .78rem 2.75rem;
+      font-size: .9rem;
+      font-family: 'DM Sans', sans-serif;
+      color: #f0eaff;
+      outline: none;
+      transition: border-color .2s, background .2s, box-shadow .2s;
+      -webkit-appearance: none;
+    }
+    .field-input::placeholder { color: rgba(139,92,246,.35); }
+    .field-input:focus {
+      border-color: rgba(139,92,246,.5);
+      background: rgba(139,92,246,.1);
+      box-shadow: 0 0 0 3px rgba(139,92,246,.12), 0 4px 16px rgba(124,58,237,.1);
+    }
+    .field-input:focus ~ .field-icon,
+    .field-wrap:focus-within .field-icon { color: rgba(167,139,250,.8); }
+
+    /* Botón principal */
+    .btn-submit {
+      width: 100%;
+      padding: .85rem 1rem;
+      border-radius: 14px;
+      border: none;
+      background: linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #ec4899 100%);
+      color: #fff;
+      font-size: .95rem;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      letter-spacing: -.01em;
+      margin-top: .5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform .2s, box-shadow .2s, filter .2s;
+      box-shadow: 0 4px 24px rgba(124,58,237,.4), 0 1px 4px rgba(0,0,0,.3);
+    }
+    .btn-submit::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,.1) 100%);
+    }
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 36px rgba(124,58,237,.55), 0 2px 8px rgba(0,0,0,.35);
+      filter: brightness(1.08);
+    }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { opacity:.6; cursor:not-allowed; pointer-events:none; }
+
+    /* Link registro */
+    .register-link {
+      text-align: center;
+      font-size: .82rem;
+      color: rgba(200,180,255,.4);
+    }
+    .register-link a {
+      color: #a78bfa;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color .2s;
+    }
+    .register-link a:hover { color: #c4b5fd; }
+
+    /* Modal registro */
+    .modal-reg-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(7,4,15,.8);
+      backdrop-filter: blur(8px);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      animation: fadeIn .15s ease;
+    }
+    .modal-reg-overlay.open { display: flex; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    .modal-reg {
+      background: linear-gradient(160deg, #120a1e, #0d0718);
+      border: 1px solid rgba(139,92,246,.2);
+      border-radius: 24px;
+      padding: 2.25rem;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      box-shadow: 0 32px 64px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04) inset;
+      animation: scaleIn .22s cubic-bezier(.34,1.4,.64,1);
+    }
+    @keyframes scaleIn {
+      from{transform:scale(.9) translateY(10px);opacity:0}
+      to  {transform:scale(1)  translateY(0);   opacity:1}
+    }
+    .modal-reg::before {
+      content: '';
+      position: absolute; top:0; left:10%; right:10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(139,92,246,.5), rgba(236,72,153,.3), transparent);
+      border-radius: 999px;
+    }
+    .modal-close {
+      position: absolute; top: 1rem; right: 1rem;
+      width: 30px; height: 30px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: rgba(200,180,255,.5);
+      font-size: .9rem; transition: background .2s, color .2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,.1); color: #f0eaff; }
+    .modal-reg h3 {
+      font-size: 1.3rem; font-weight: 800; letter-spacing: -.035em;
+      color: #f5f0ff; margin-bottom: .4rem;
+    }
+    .modal-reg .modal-sub { font-size:.84rem; color:rgba(200,180,255,.5); margin-bottom:1.5rem; }
+
+    /* ══════════════════════════════════════════════
+       LADO DERECHO — ILUSTRACIÓN ANIME
+    ══════════════════════════════════════════════ */
+    .right-panel {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(160deg, #1a0533 0%, #0d0a2e 40%, #200830 100%);
+    }
+
+    /* Fondo degradado animado */
+    .right-panel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(139,92,246,.35) 0%, transparent 55%),
+        radial-gradient(ellipse at 75% 80%, rgba(236,72,153,.25) 0%, transparent 50%),
+        radial-gradient(ellipse at 60% 50%, rgba(59,130,246,.15) 0%, transparent 50%);
+      z-index: 0;
+      animation: bgShift 8s ease-in-out infinite alternate;
+    }
+    @keyframes bgShift {
+      from { opacity:.8; transform:scale(1); }
+      to   { opacity:1;  transform:scale(1.05); }
+    }
+
+    /* Ilustración SVG anime — personaje futurista */
+    .anime-wrap {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1;
+    }
+
+    .anime-scene {
+      width: 100%; height: 100%;
+      position: relative;
+    }
+
+    /* Partículas flotantes */
+    .particles {
+      position: absolute; inset: 0;
+      pointer-events: none;
+    }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(167,139,250,.6);
+      animation: floatParticle linear infinite;
+    }
+
+    @keyframes floatParticle {
+      0%   { transform: translateY(100vh) scale(0); opacity:0; }
+      10%  { opacity:1; }
+      90%  { opacity:.6; }
+      100% { transform: translateY(-20px) scale(1); opacity:0; }
+    }
+
+    /* Texto decorativo lado derecho */
+    .right-text {
+      position: absolute;
+      bottom: 3rem; left: 3rem; right: 3rem;
+      z-index: 2;
+      text-align: center;
+    }
+    .right-text h2 {
+      font-size: 1.5rem; font-weight: 800;
+      letter-spacing: -.035em; line-height: 1.25;
+      color: rgba(245,240,255,.9);
+      text-shadow: 0 2px 20px rgba(139,92,246,.4);
+      margin-bottom: .5rem;
+    }
+    .right-text p {
+      font-size: .82rem;
+      color: rgba(200,180,255,.5);
+      line-height: 1.6;
+    }
+
+    /* ══════════════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════════════ */
+    #toast-container {
+      position: fixed; bottom:1.5rem; right:1.5rem;
+      display:flex; flex-direction:column; gap:.5rem;
+      z-index:9999; pointer-events:none;
+    }
+    .toast {
+      background: rgba(18,10,30,.95);
+      border:1px solid rgba(139,92,246,.25);
+      border-radius:12px; padding:.75rem 1.1rem;
+      font-size:.84rem; font-weight:500; color:#e9d5ff;
+      display:flex; align-items:center; gap:.6rem;
+      box-shadow:0 8px 32px rgba(0,0,0,.4);
+      animation:slideIn .2s cubic-bezier(.34,1.56,.64,1);
+      max-width:300px; pointer-events:auto;
+    }
+    .toast.success { border-left:3px solid #10b981; }
+    .toast.error   { border-left:3px solid #f43f5e; }
+    .toast.info    { border-left:3px solid #8b5cf6; }
+    @keyframes slideIn {
+      from{transform:translateX(110%) scale(.9);opacity:0}
+      to  {transform:translateX(0)    scale(1); opacity:1}
+    }
+
+    /* ══════════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════════ */
+    @media (max-width: 860px) {
+      body { overflow: auto; }
+      .login-wrap { grid-template-columns: 1fr; }
+      .right-panel { display: none; }
+      .left-panel { padding: 2rem 1.5rem; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-wrap">
+
+  <!-- ═══════════════════════════════════════
+       LADO IZQUIERDO — FORMULARIO
+  ═══════════════════════════════════════ -->
+  <div class="left-panel">
+    <div class="form-card">
+
+      <!-- Marca -->
+      <div class="brand">
+        <div class="brand-icon">🤟</div>
+        <div class="brand-name">Señas<span>V2</span></div>
+      </div>
+
+      <!-- Encabezado -->
+      <div class="form-heading">
+        <h1>Sistema de Traducción<br>de Lenguaje de Señas</h1>
+        <p>Inicia sesión para continuar</p>
+      </div>
+
+      <!-- Botón Google -->
+      <button class="btn-google" id="btn-google" onclick="loginGoogle()">
+        <div class="g-spinner"></div>
+        <svg class="g-icon" width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.1 30.2 0 24 0 14.7 0 6.7 5.4 2.8 13.3l7.8 6.1C12.5 13 17.8 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.6 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 6.9-10.1 6.9-17z"/>
+          <path fill="#FBBC05" d="M10.6 28.4A14.5 14.5 0 0 1 9.5 24c0-1.5.3-3 .8-4.4L2.5 13.5A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.5l8.1-6.1z"/>
+          <path fill="#34A853" d="M24 48c6.5 0 12-2.1 16-5.8l-7.5-5.8c-2.1 1.5-4.8 2.3-8.5 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.8 6A23.9 23.9 0 0 0 24 48z"/>
+        </svg>
+        <span class="g-text">Iniciar sesión con Google</span>
+      </button>
+
+      <!-- Separador -->
+      <div class="sep">o</div>
+
+      <!-- Campos -->
+      <div class="field">
+        <label>Correo electrónico</label>
+        <div class="field-wrap">
+          <svg class="field-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <input id="login-email" class="field-input" type="email" placeholder="usuario@email.com" autocomplete="email">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Contraseña</label>
+        <div class="field-wrap">
+          <svg class="field-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input id="login-password" class="field-input" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+      </div>
+
+      <!-- Botón principal -->
+      <button class="btn-submit" id="btn-submit" onclick="hacerLogin()">
+        Iniciar Sesión
+      </button>
+
+      <!-- Link registro -->
+      <div class="register-link">
+        ¿No tienes cuenta? <a href="#" onclick="abrirRegistro(event)">Regístrate</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       LADO DERECHO — ILUSTRACIÓN
+  ═══════════════════════════════════════ -->
+  <div class="right-panel">
+    <div class="anime-wrap">
+      <!-- Ilustración SVG estilo anime futurista -->
+      <svg viewBox="0 0 600 700" xmlns="http://www.w3.org/2000/svg"
+           style="width:100%;height:100%;position:absolute;inset:0;">
+        <defs>
+          <radialGradient id="bgGlow" cx="50%" cy="45%" r="55%">
+            <stop offset="0%" stop-color="#4c1d95" stop-opacity=".6"/>
+            <stop offset="100%" stop-color="#07040f" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="skinGrad" cx="50%" cy="30%" r="70%">
+            <stop offset="0%" stop-color="#fde8d8"/>
+            <stop offset="100%" stop-color="#f4c5a0"/>
+          </radialGradient>
+          <radialGradient id="hairGrad" cx="50%" cy="0%" r="100%">
+            <stop offset="0%" stop-color="#7c3aed"/>
+            <stop offset="60%" stop-color="#4c1d95"/>
+            <stop offset="100%" stop-color="#1e0442"/>
+          </radialGradient>
+          <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#e879f9"/>
+            <stop offset="100%" stop-color="#7c3aed"/>
+          </radialGradient>
+          <linearGradient id="clothesGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4c1d95"/>
+            <stop offset="50%" stop-color="#6d28d9"/>
+            <stop offset="100%" stop-color="#be185d"/>
+          </linearGradient>
+          <linearGradient id="glowLine" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="transparent"/>
+            <stop offset="50%" stop-color="#a78bfa" stop-opacity=".8"/>
+            <stop offset="100%" stop-color="transparent"/>
+          </linearGradient>
+          <filter id="softGlow">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="strongGlow">
+            <feGaussianBlur stdDeviation="8" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#5b21b6"/>
+            <stop offset="100%" stop-color="#1e0442"/>
+          </linearGradient>
+        </defs>
+
+        <!-- Fondo -->
+        <rect width="600" height="700" fill="#0d0522"/>
+        <ellipse cx="300" cy="350" rx="280" ry="280" fill="url(#bgGlow)"/>
+
+        <!-- Círculos decorativos / halo -->
+        <circle cx="300" cy="320" r="200" fill="none" stroke="rgba(139,92,246,.08)" stroke-width="1"/>
+        <circle cx="300" cy="320" r="170" fill="none" stroke="rgba(139,92,246,.12)" stroke-width="1"/>
+        <circle cx="300" cy="320" r="140" fill="none" stroke="rgba(236,72,153,.08)" stroke-width="1"/>
+
+        <!-- Líneas de energía horizontales -->
+        <line x1="0" y1="320" x2="600" y2="320" stroke="url(#glowLine)" stroke-width=".5" opacity=".4"/>
+        <line x1="0" y1="340" x2="600" y2="340" stroke="url(#glowLine)" stroke-width=".3" opacity=".2"/>
+        <line x1="0" y1="300" x2="600" y2="300" stroke="url(#glowLine)" stroke-width=".3" opacity=".2"/>
+
+        <!-- Puntos de datos flotantes (estética UI futurista) -->
+        <g opacity=".5">
+          <circle cx="80" cy="200" r="2" fill="#a78bfa"><animate attributeName="opacity" values="0;1;0" dur="3s" begin="0s" repeatCount="indefinite"/></circle>
+          <circle cx="520" cy="180" r="2" fill="#f0abfc"><animate attributeName="opacity" values="0;1;0" dur="2.5s" begin="1s" repeatCount="indefinite"/></circle>
+          <circle cx="100" cy="450" r="1.5" fill="#818cf8"><animate attributeName="opacity" values="0;1;0" dur="4s" begin=".5s" repeatCount="indefinite"/></circle>
+          <circle cx="500" cy="440" r="1.5" fill="#e879f9"><animate attributeName="opacity" values="0;1;0" dur="3.5s" begin="2s" repeatCount="indefinite"/></circle>
+          <circle cx="140" cy="300" r="1" fill="#c4b5fd"><animate attributeName="opacity" values="0;1;0" dur="2s" begin="1.5s" repeatCount="indefinite"/></circle>
+          <circle cx="460" cy="310" r="1" fill="#f9a8d4"><animate attributeName="opacity" values="0;1;0" dur="3s" begin=".8s" repeatCount="indefinite"/></circle>
+        </g>
+
+        <!-- Cuerpo / ropa -->
+        <path d="M185 480 Q200 420 230 400 L300 390 L370 400 Q400 420 415 480 L430 580 L170 580 Z"
+              fill="url(#clothesGrad)"/>
+        <!-- Brillo ropa -->
+        <path d="M230 400 Q260 380 300 378 Q340 380 370 400 Q350 410 300 415 Q250 410 230 400Z"
+              fill="rgba(255,255,255,.08)"/>
+        <!-- Cuello -->
+        <rect x="280" y="370" width="40" height="30" rx="4" fill="#fde8d8"/>
+
+        <!-- Brazo izquierdo (levantado — lenguaje de señas) -->
+        <path d="M185 450 Q160 420 145 380 Q135 350 155 330 Q170 315 185 335 Q195 355 210 380 L230 420 Z"
+              fill="#fde8d8"/>
+        <!-- Mano izquierda haciendo seña 🤟 -->
+        <g transform="translate(130,290) rotate(-15)">
+          <!-- Palma -->
+          <ellipse cx="30" cy="35" rx="22" ry="26" fill="#fde8d8"/>
+          <!-- Pulgar extendido -->
+          <path d="M8 28 Q0 20 4 12 Q8 6 14 10 Q18 14 16 22 Z" fill="#fde8d8"/>
+          <!-- Índice doblado -->
+          <rect x="18" y="8" width="9" height="18" rx="4" fill="#f4c5a0"/>
+          <!-- Medio doblado -->
+          <rect x="29" y="6" width="9" height="20" rx="4" fill="#f4c5a0"/>
+          <!-- Anular doblado -->
+          <rect x="40" y="8" width="8" height="18" rx="4" fill="#f4c5a0"/>
+          <!-- Meñique extendido -->
+          <path d="M50 14 Q58 8 62 14 Q64 20 58 28 L52 28 Z" fill="#fde8d8"/>
+          <!-- Sombra palma -->
+          <ellipse cx="30" cy="40" rx="20" ry="10" fill="rgba(0,0,0,.08)"/>
+        </g>
+
+        <!-- Brazo derecho -->
+        <path d="M415 450 Q440 430 450 400 Q455 380 445 365 Q430 350 415 370 L400 410 L385 440 Z"
+              fill="#fde8d8"/>
+
+        <!-- Cabeza -->
+        <ellipse cx="300" cy="290" rx="72" ry="80" fill="url(#skinGrad)"/>
+
+        <!-- Cabello — estilo anime (voluminoso, morado) -->
+        <!-- Parte trasera -->
+        <ellipse cx="300" cy="255" rx="78" ry="60" fill="url(#hairGrad)"/>
+        <!-- Flequillo lateral izquierdo -->
+        <path d="M228 270 Q220 240 235 220 Q245 205 260 215 Q255 235 258 260 Z" fill="#5b21b6"/>
+        <path d="M232 285 Q218 260 228 235 Q238 215 250 225 Q245 248 248 270 Z" fill="#4c1d95"/>
+        <!-- Flequillo lateral derecho -->
+        <path d="M372 270 Q380 240 365 220 Q355 205 340 215 Q345 235 342 260 Z" fill="#5b21b6"/>
+        <path d="M368 285 Q382 260 372 235 Q362 215 350 225 Q355 248 352 270 Z" fill="#4c1d95"/>
+        <!-- Mechones frontales -->
+        <path d="M268 215 Q272 195 280 190 Q288 196 284 215 Z" fill="#6d28d9"/>
+        <path d="M285 210 Q290 188 300 185 Q310 188 315 210 Z" fill="#7c3aed"/>
+        <path d="M318 215 Q324 195 332 190 Q338 196 334 215 Z" fill="#6d28d9"/>
+        <!-- Mechón largo que cae por hombro izq -->
+        <path d="M232 285 Q218 340 220 400 Q225 440 232 460 Q240 420 238 360 Q240 310 248 280 Z"
+              fill="#4c1d95" opacity=".9"/>
+
+        <!-- Oreja izquierda -->
+        <ellipse cx="230" cy="295" rx="10" ry="14" fill="#fde8d8"/>
+        <ellipse cx="232" cy="295" rx="6" ry="10" fill="#f4c5a0"/>
+        <!-- Oreja derecha -->
+        <ellipse cx="370" cy="295" rx="10" ry="14" fill="#fde8d8"/>
+        <ellipse cx="368" cy="295" rx="6" ry="10" fill="#f4c5a0"/>
+
+        <!-- Ojos anime -->
+        <!-- Ojo izquierdo -->
+        <g filter="url(#softGlow)">
+          <ellipse cx="272" cy="295" rx="20" ry="22" fill="#1a0442"/>
+          <ellipse cx="272" cy="295" rx="16" ry="18" fill="url(#eyeGlow)"/>
+          <ellipse cx="272" cy="295" rx="10" ry="11" fill="#0d0225"/>
+          <ellipse cx="267" cy="290" rx="4" ry="4" fill="rgba(255,255,255,.9)"/>
+          <ellipse cx="278" cy="300" rx="2" ry="2" fill="rgba(255,255,255,.4)"/>
+        </g>
+        <!-- Ojo derecho -->
+        <g filter="url(#softGlow)">
+          <ellipse cx="328" cy="295" rx="20" ry="22" fill="#1a0442"/>
+          <ellipse cx="328" cy="295" rx="16" ry="18" fill="url(#eyeGlow)"/>
+          <ellipse cx="328" cy="295" rx="10" ry="11" fill="#0d0225"/>
+          <ellipse cx="323" cy="290" rx="4" ry="4" fill="rgba(255,255,255,.9)"/>
+          <ellipse cx="334" cy="300" rx="2" ry="2" fill="rgba(255,255,255,.4)"/>
+        </g>
+        <!-- Pestañas superiores -->
+        <path d="M252 275 Q258 268 272 270 Q286 268 292 275" fill="none" stroke="#1e0442" stroke-width="3" stroke-linecap="round"/>
+        <path d="M308 275 Q314 268 328 270 Q342 268 348 275" fill="none" stroke="#1e0442" stroke-width="3" stroke-linecap="round"/>
+
+        <!-- Ceja izquierda -->
+        <path d="M255 274 Q265 268 285 272" fill="none" stroke="#4c1d95" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Ceja derecha -->
+        <path d="M315 272 Q335 268 345 274" fill="none" stroke="#4c1d95" stroke-width="2.5" stroke-linecap="round"/>
+
+        <!-- Nariz -->
+        <path d="M296 310 Q300 316 304 310" fill="none" stroke="rgba(180,120,80,.4)" stroke-width="1.5" stroke-linecap="round"/>
+
+        <!-- Boca / sonrisa suave -->
+        <path d="M283 328 Q292 336 300 337 Q308 336 317 328" fill="none" stroke="#e8a090" stroke-width="2" stroke-linecap="round"/>
+        <!-- Brillo labios -->
+        <ellipse cx="300" cy="333" rx="8" ry="3" fill="rgba(255,200,190,.3)"/>
+
+        <!-- Rubor mejillas -->
+        <ellipse cx="252" cy="318" rx="14" ry="8" fill="rgba(255,150,150,.12)"/>
+        <ellipse cx="348" cy="318" rx="14" ry="8" fill="rgba(255,150,150,.12)"/>
+
+        <!-- Brillo / iluminación en la cara -->
+        <ellipse cx="280" cy="275" rx="15" ry="18" fill="rgba(255,255,255,.06)"/>
+
+        <!-- Efecto de aura / energía alrededor de la mano -->
+        <g filter="url(#strongGlow)" opacity=".7">
+          <circle cx="162" cy="315" r="30" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+          <circle cx="162" cy="315" r="20" fill="none" stroke="#e879f9" stroke-width="1"/>
+        </g>
+
+        <!-- Partículas de energía alrededor de la mano -->
+        <circle cx="125" cy="295" r="3" fill="#a78bfa" opacity=".8">
+          <animate attributeName="r" values="2;4;2" dur="1.5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".8;.3;.8" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="200" cy="275" r="2" fill="#f0abfc" opacity=".7">
+          <animate attributeName="r" values="1.5;3;1.5" dur="2s" begin=".5s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".7;.2;.7" dur="2s" begin=".5s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="110" cy="330" r="2.5" fill="#818cf8" opacity=".6">
+          <animate attributeName="r" values="2;4;2" dur="1.8s" begin="1s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values=".6;.2;.6" dur="1.8s" begin="1s" repeatCount="indefinite"/>
+        </circle>
+
+        <!-- Texto UI futurista superpuesto -->
+        <g opacity=".35" font-family="'DM Mono', monospace" font-size="9" fill="#a78bfa">
+          <text x="50" y="150">GESTURE_ID: 0x4F2A</text>
+          <text x="380" y="160">SIGN_LANG: LSA</text>
+          <text x="60" y="530">CONFIDENCE: 98.7%</text>
+          <text x="400" y="540">LATENCY: 12ms</text>
+        </g>
+
+        <!-- Líneas de escaneo (estética HUD) -->
+        <line x1="50" y1="290" x2="200" y2="290" stroke="#6d28d9" stroke-width=".5" opacity=".3"/>
+        <line x1="50" y1="295" x2="185" y2="295" stroke="#6d28d9" stroke-width=".5" opacity=".2"/>
+        <line x1="400" y1="290" x2="550" y2="290" stroke="#6d28d9" stroke-width=".5" opacity=".3"/>
+
+        <!-- Animación de cabello suave -->
+        <animateTransform attributeName="transform" type="translate"
+          values="0,0; 0,-3; 0,0" dur="4s" repeatCount="indefinite"
+          additive="sum"/>
+      </svg>
+    </div>
+
+    <!-- Partículas flotantes JS -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Texto inferior -->
+    <div class="right-text">
+      <h2>Comunicación sin barreras</h2>
+      <p>Tecnología · Inclusión · Innovación</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal de Registro -->
+<div class="modal-reg-overlay" id="modal-registro">
+  <div class="modal-reg">
+    <button class="modal-close" onclick="cerrarRegistro()">✕</button>
+    <h3>Crear cuenta</h3>
+    <p class="modal-sub">Únete a la plataforma de señas</p>
+
+    <div class="field">
+      <label>Nombre completo</label>
+      <div class="field-wrap">
+        <svg class="field-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <input id="reg-nombre" class="field-input" type="text" placeholder="Tu nombre" autocomplete="name">
+      </div>
+    </div>
+    <div class="field">
+      <label>Correo electrónico</label>
+      <div class="field-wrap">
+        <svg class="field-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <input id="reg-email" class="field-input" type="email" placeholder="usuario@email.com" autocomplete="email">
+      </div>
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <div class="field-wrap">
+        <svg class="field-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input id="reg-password" class="field-input" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+      </div>
+    </div>
+    <button class="btn-submit" style="margin-bottom:.75rem" onclick="hacerRegistro()">Crear cuenta</button>
+    <div class="register-link">
+      ¿Ya tienes cuenta? <a href="#" onclick="cerrarRegistro()">Inicia sesión</a>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="js/app.js"></script>
+<script>
+  /* ── Toast local (fallback si app.js no carga) ── */
+  function toast(msg, tipo = 'info') {
+    const c = document.getElementById('toast-container');
+    if (!c) return;
+    const t = document.createElement('div');
+    t.className = `toast ${tipo}`;
+    const icons = { success:'✅', error:'❌', info:'💜', warning:'⚠️' };
+    t.innerHTML = `<span>${icons[tipo]||'💜'}</span><span>${msg}</span>`;
+    c.appendChild(t);
+    setTimeout(() => {
+      t.style.transition = 'opacity .3s, transform .3s';
+      t.style.opacity = '0'; t.style.transform = 'translateX(110%)';
+      setTimeout(() => t.remove(), 300);
+    }, 3200);
+  }
+
+  /* ── Redirigir si ya está logueado ── */
+  try {
+    if (typeof Auth !== 'undefined' && Auth.estaLogueado()) {
+      window.location.href = 'dashboard.html';
+    }
+  } catch(e) {}
+
+  /* ── Login con email ── */
+  async function hacerLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { toast('Completa todos los campos', 'error'); return; }
+    const btn = document.getElementById('btn-submit');
+    btn.textContent = 'Entrando...'; btn.disabled = true;
+    try {
+      const res = await Api.post('/auth/login', { email, password });
+      Auth.guardar(res.token, res.usuario);
+      toast('¡Bienvenido, ' + res.usuario.nombre + '!', 'success');
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 900);
+    } catch(e) {
+      toast(e.message || 'Correo o contraseña incorrectos', 'error');
+      btn.textContent = 'Iniciar Sesión'; btn.disabled = false;
+    }
+  }
+
+  /* ── Registro ── */
+  async function hacerRegistro() {
+    const nombre   = document.getElementById('reg-nombre').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+    const password = document.getElementById('reg-password').value;
+    if (!nombre || !email || !password) { toast('Completa todos los campos', 'error'); return; }
+    if (password.length < 6) { toast('Contraseña de mínimo 6 caracteres', 'error'); return; }
+    const btn = document.querySelector('#modal-registro .btn-submit');
+    btn.textContent = 'Creando...'; btn.disabled = true;
+    try {
+      await Api.post('/auth/registro', { nombre, email, password });
+      toast('¡Cuenta creada! Inicia sesión.', 'success');
+      cerrarRegistro();
+      document.getElementById('login-email').value = email;
+      btn.textContent = 'Crear cuenta'; btn.disabled = false;
+    } catch(e) {
+      toast(e.message || 'Error al crear cuenta', 'error');
+      btn.textContent = 'Crear cuenta'; btn.disabled = false;
+    }
+  }
+
+  /* ── Modal registro ── */
+  function abrirRegistro(e) {
+    if (e) e.preventDefault();
+    document.getElementById('modal-registro').classList.add('open');
+  }
+  function cerrarRegistro() {
+    document.getElementById('modal-registro').classList.remove('open');
+  }
+  document.getElementById('modal-registro').addEventListener('click', function(e) {
+    if (e.target === this) cerrarRegistro();
+  });
+
+  /* ══════════════════════════════════════════
+     GOOGLE OAuth
+     Reemplaza GOOGLE_CLIENT_ID con tu ID real
+     de https://console.cloud.google.com
+  ══════════════════════════════════════════ */
+  const GOOGLE_CLIENT_ID = 'TU_CLIENT_ID_AQUI';
+
+  function loginGoogle() {
+    const btn = document.getElementById('btn-google');
+
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'TU_CLIENT_ID_AQUI') {
+      mostrarModalGoogle(); return;
+    }
+
+    btn.classList.add('loading');
+    document.querySelector('.g-text').textContent = 'Conectando...';
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: window.location.origin + '/auth/google/callback',
+      response_type: 'code',
+      scope: 'openid email profile',
+      prompt: 'select_account'
+    });
+    window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+  }
+
+  function mostrarModalGoogle() {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(7,4,15,.85);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem;backdrop-filter:blur(8px);animation:fadeIn .15s ease;';
+    overlay.innerHTML = `
+      <div style="background:linear-gradient(160deg,#120a1e,#0d0718);border:1px solid rgba(139,92,246,.25);border-radius:24px;padding:2.25rem;max-width:440px;width:100%;box-shadow:0 32px 64px rgba(0,0,0,.6);animation:scaleIn .22s cubic-bezier(.34,1.4,.64,1);position:relative;">
+        <div style="font-size:2rem;margin-bottom:.75rem">🔐</div>
+        <h3 style="font-size:1.2rem;font-weight:800;letter-spacing:-.035em;color:#f5f0ff;margin-bottom:.5rem">Configurar Google OAuth</h3>
+        <p style="font-size:.84rem;color:rgba(200,180,255,.55);line-height:1.65;margin-bottom:1.25rem">Para activar <strong style="color:#c4b5fd">Iniciar sesión con Google</strong> necesitas un Client ID:</p>
+        <ol style="font-size:.82rem;color:rgba(200,180,255,.7);line-height:2;padding-left:1.2rem;margin-bottom:1.25rem">
+          <li>Ve a <a href="https://console.cloud.google.com" target="_blank" style="color:#a78bfa">console.cloud.google.com</a></li>
+          <li>Crea un proyecto → APIs → <em>Credenciales</em></li>
+          <li>Crear credenciales → <em>ID de cliente OAuth</em></li>
+          <li>Tipo: <strong>Aplicación web</strong></li>
+          <li>Agrega tu dominio en <em>Orígenes autorizados</em></li>
+          <li>Copia el ID y pégalo en <code style="background:rgba(139,92,246,.15);padding:.1rem .4rem;border-radius:4px;color:#a78bfa;font-family:DM Mono,monospace">login.html</code></li>
+        </ol>
+        <code style="display:block;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);border-radius:10px;padding:.75rem 1rem;font-size:.75rem;color:#a78bfa;font-family:DM Mono,monospace;margin-bottom:1.5rem;line-height:1.7">const GOOGLE_CLIENT_ID =<br>'<span style="color:#e879f9">tu-id</span>.apps.googleusercontent.com';</code>
+        <button onclick="this.closest('div').parentElement.remove()" style="width:100%;padding:.75rem;border-radius:12px;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.35);color:#c4b5fd;font-size:.9rem;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;transition:background .2s;" onmouseover="this.style.background='rgba(139,92,246,.3)'" onmouseout="this.style.background='rgba(139,92,246,.2)'">Entendido</button>
+      </div>
+      <style>@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes scaleIn{from{transform:scale(.9) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}</style>
+    `;
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  }
+
+  /* ── Enter ── */
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (document.getElementById('modal-registro').classList.contains('open')) {
+      hacerRegistro();
+    } else {
+      hacerLogin();
+    }
+  });
+
+  /* ── Partículas flotantes ── */
+  const container = document.getElementById('particles');
+  if (container) {
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 3 + 1;
+      const colors = ['rgba(167,139,250,.7)', 'rgba(240,171,252,.6)', 'rgba(236,72,153,.5)', 'rgba(129,140,248,.6)'];
+      p.style.cssText = `
+        width:${size}px; height:${size}px;
+        left:${Math.random() * 100}%;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        animation-duration:${6 + Math.random() * 8}s;
+        animation-delay:${Math.random() * 6}s;
+        box-shadow: 0 0 ${size*3}px currentColor;
+      `;
+      container.appendChild(p);
+    }
+  }
+</script>
+</body>
+</html>
