@@ -4,152 +4,170 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Señas V2 — Dashboard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
+  <script src="js/navbar.js"></script>
   <style>
-    .dashboard-main { max-width: 980px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .dashboard-main { max-width: 1020px; margin: 0 auto; padding: 2.5rem 1.75rem; }
+
     .welcome-banner {
-      background: linear-gradient(135deg, rgba(79,142,247,.12), rgba(56,217,169,.08));
-      border: 1px solid rgba(79,142,247,.25);
+      background: var(--grad-hero);
+      border: 1px solid var(--border);
       border-radius: var(--radius-xl);
-      padding: 2rem;
+      padding: 2.25rem 2.5rem;
       margin-bottom: 2rem;
-      display: flex; align-items: center; gap: 1.5rem;
+      display: flex; align-items: center; gap: 1.75rem;
+      position: relative; overflow: hidden;
     }
-    .welcome-emoji { font-size: 3rem; }
+    .welcome-banner::before {
+      content: ''; position: absolute; top: -60px; right: -60px;
+      width: 220px; height: 220px;
+      background: radial-gradient(circle, rgba(99,102,241,.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .welcome-banner::after {
+      content: ''; position: absolute; bottom: -40px; left: 30%;
+      width: 160px; height: 160px;
+      background: radial-gradient(circle, rgba(20,184,166,.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .welcome-emoji { font-size: 3.2rem; flex-shrink: 0; filter: drop-shadow(0 4px 12px rgba(0,0,0,.2)); }
+    .welcome-text h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.03em; color: var(--text-100); margin-bottom: .2rem; }
+    .welcome-text p  { color: var(--text-300); font-size: .95rem; }
+
     .acciones-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 1rem; margin-bottom: 2rem;
     }
     .accion-card {
       background: var(--bg-700); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 1.5rem;
+      border-radius: var(--radius-lg); padding: 1.75rem 1.5rem;
       cursor: pointer; transition: all var(--transition);
       text-decoration: none; color: inherit;
-      display: flex; flex-direction: column; gap: .75rem;
+      display: flex; flex-direction: column; gap: .6rem;
+      position: relative; overflow: hidden;
     }
-    .accion-card:hover {
-      border-color: var(--border-light);
-      background: var(--bg-600);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-sm);
+    .accion-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: var(--card-hover-grad); opacity: 0;
+      transition: opacity var(--transition); border-radius: inherit;
     }
-    .accion-icon { font-size: 2rem; }
-    .accion-title { font-weight: 700; font-size: 1.05rem; }
-    .accion-desc  { color: var(--text-300); font-size: .85rem; }
+    .accion-card:hover::before { opacity: 1; }
+    .accion-card:hover { border-color: var(--border-light); transform: translateY(-3px); box-shadow: var(--shadow-card); }
+    .accion-icon  { font-size: 2rem; margin-bottom: .25rem; display: block; }
+    .accion-title { font-weight: 700; font-size: 1rem; color: var(--text-100); letter-spacing: -.01em; }
+    .accion-desc  { color: var(--text-300); font-size: .82rem; line-height: 1.5; }
+    .accion-arrow {
+      margin-top: .5rem; font-size: .8rem; color: var(--accent); font-weight: 600;
+      opacity: 0; transform: translateX(-6px); transition: all var(--transition); display: block;
+    }
+    .accion-card:hover .accion-arrow { opacity: 1; transform: translateX(0); }
+
+    .section-header { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.25rem; }
+    .section-title  { font-size: 1rem; font-weight: 700; color: var(--text-100); letter-spacing: -.01em; }
+    .section-pill {
+      font-size: .7rem; font-weight: 700; color: var(--accent);
+      background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.2);
+      padding: .15rem .55rem; border-radius: 999px; letter-spacing: .04em; text-transform: uppercase;
+    }
 
     .historial-item {
       display: flex; align-items: center; gap: 1rem;
-      padding: .75rem 0;
-      border-bottom: 1px solid var(--border);
-      cursor: pointer; transition: color var(--transition);
+      padding: .9rem 0; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: all var(--transition);
     }
-    .historial-item:hover { color: var(--accent); }
+    .historial-item:hover { color: var(--accent); padding-left: .5rem; }
     .historial-item:last-child { border-bottom: none; }
+    .historial-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .historial-dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); }
+    .historial-dot.closed { background: var(--text-300); }
 
     .codigo-sala {
       background: var(--bg-800); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: .6rem 1rem;
-      font-family: var(--font-mono); font-size: 1.1rem;
-      letter-spacing: .15em; color: var(--accent);
-      text-align: center; user-select: all;
+      border-radius: var(--radius-md); padding: .75rem 1rem;
+      font-family: var(--font-mono); font-size: 1.2rem; letter-spacing: .2em;
+      color: var(--accent); text-align: center; user-select: all; font-weight: 500;
     }
   </style>
 </head>
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar">
-  <span class="navbar-brand">🤟 Señas V2</span>
-  <div class="navbar-nav">
-    <span id="nav-nombre" class="text-muted text-sm" style="margin-right:.5rem"></span>
-    <span id="nav-badge-admin"></span>
-    <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Salir</button>
-  </div>
-</nav>
-
 <main class="dashboard-main">
 
-  <!-- Banner bienvenida -->
   <div class="welcome-banner">
     <div class="welcome-emoji">👋</div>
-    <div>
+    <div class="welcome-text">
       <h2 id="welcome-title">Hola</h2>
-      <p class="text-muted">¿Qué deseas hacer hoy?</p>
+      <p>¿Qué deseas hacer hoy?</p>
     </div>
   </div>
 
-  <!-- Acciones principales -->
   <div class="acciones-grid">
-
     <div class="accion-card" onclick="abrirModalCrear()">
       <span class="accion-icon">📞</span>
       <span class="accion-title">Nueva reunión</span>
       <span class="accion-desc">Crea una sala y comparte el código con otros participantes</span>
+      <span class="accion-arrow">Crear sala →</span>
     </div>
-
     <div class="accion-card" onclick="abrirModalUnirse()">
       <span class="accion-icon">🔗</span>
       <span class="accion-title">Unirse a reunión</span>
       <span class="accion-desc">Ingresa el código de una sala para conectarte</span>
+      <span class="accion-arrow">Ingresar →</span>
     </div>
-
     <div class="accion-card" onclick="window.location.href='admin.html'" id="card-admin" style="display:none">
       <span class="accion-icon">⚙️</span>
       <span class="accion-title">Panel de admin</span>
       <span class="accion-desc">Gestionar gestos, usuarios y configuración del sistema</span>
+      <span class="accion-arrow">Abrir panel →</span>
     </div>
-
   </div>
 
-  <!-- Historial de reuniones -->
   <div class="card">
-    <h3 style="margin-bottom:1rem">📜 Historial de reuniones</h3>
+    <div class="section-header">
+      <h3 class="section-title">Historial de reuniones</h3>
+      <span class="section-pill">Recientes</span>
+    </div>
     <div id="historial-lista">
-      <div class="flex items-center gap-3" style="padding:1rem 0">
+      <div class="flex items-center gap-3" style="padding:1.25rem 0">
         <div class="spinner"></div>
-        <span class="text-muted">Cargando historial...</span>
+        <span class="text-muted text-sm">Cargando historial...</span>
       </div>
     </div>
   </div>
 
 </main>
 
-<!-- MODAL: Crear reunión -->
+<!-- MODAL: Crear -->
 <div id="modal-crear" class="modal-overlay" style="display:none" onclick="cerrarModales(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <h3 style="margin-bottom:1rem">📞 Nueva reunión</h3>
-    <div class="input-group" style="margin-bottom:1rem">
-      <label>Nombre de la reunión (opcional)</label>
+    <div class="modal-icon">📞</div>
+    <h3 class="modal-title">Nueva reunión</h3>
+    <div class="input-group" style="margin-bottom:1.25rem">
+      <label>Nombre de la reunión <span style="color:var(--text-300);font-weight:400">(opcional)</span></label>
       <input id="crear-nombre" class="input" type="text" placeholder="Ej: Reunión con Juan">
     </div>
-    <div id="crear-resultado" style="display:none; margin-bottom:1rem">
-      <p class="text-muted text-sm" style="margin-bottom:.5rem">Comparte este código:</p>
+    <div id="crear-resultado" style="display:none; margin-bottom:1.25rem">
+      <p class="text-muted text-sm" style="margin-bottom:.6rem">Comparte este código:</p>
       <div id="crear-codigo" class="codigo-sala">—</div>
-      <button class="btn btn-ghost btn-sm btn-full" style="margin-top:.5rem" onclick="copiarCodigo()">
-        Copiar código
-      </button>
+      <button class="btn btn-ghost btn-sm btn-full" style="margin-top:.6rem" onclick="copiarCodigo()">📋 Copiar código</button>
     </div>
-    <div style="display:flex; gap:.75rem; margin-top:1rem">
+    <div style="display:flex; gap:.75rem; margin-top:1.25rem">
       <button class="btn btn-ghost flex-1" onclick="cerrarModal('modal-crear')">Cancelar</button>
       <button id="btn-crear" class="btn btn-primary flex-1" onclick="crearReunion()">Crear sala</button>
-      <button id="btn-entrar-nueva" class="btn btn-success flex-1" style="display:none" onclick="entrarASala()">
-        Entrar ahora →
-      </button>
+      <button id="btn-entrar-nueva" class="btn btn-success flex-1" style="display:none" onclick="entrarASala()">Entrar ahora →</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Unirse a reunión -->
+<!-- MODAL: Unirse -->
 <div id="modal-unirse" class="modal-overlay" style="display:none" onclick="cerrarModales(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <h3 style="margin-bottom:1rem">🔗 Unirse a reunión</h3>
+    <div class="modal-icon">🔗</div>
+    <h3 class="modal-title">Unirse a reunión</h3>
     <div class="input-group" style="margin-bottom:1.5rem">
       <label>Código de sala</label>
-      <input id="unirse-codigo" class="input" type="text"
-             placeholder="ABC-123-XYZ"
-             style="font-family:var(--font-mono); letter-spacing:.1em; text-transform:uppercase; text-align:center; font-size:1.1rem">
+      <input id="unirse-codigo" class="input input-code" type="text" placeholder="ABC-123-XYZ">
     </div>
     <div style="display:flex; gap:.75rem">
       <button class="btn btn-ghost flex-1" onclick="cerrarModal('modal-unirse')">Cancelar</button>
@@ -162,17 +180,16 @@
 <script src="js/app.js"></script>
 <script>
   Auth.requerir();
-
-  // ---- Setup ----
   const usuario = Auth.usuario();
   document.getElementById('welcome-title').textContent = `Hola, ${usuario.nombre.split(' ')[0]} 👋`;
-  document.getElementById('nav-nombre').textContent = usuario.nombre;
+  const _navNombre = document.getElementById('nav-nombre');
+  if (_navNombre) _navNombre.textContent = usuario.nombre;
   if (Auth.esAdmin()) {
     document.getElementById('card-admin').style.display = '';
-    document.getElementById('nav-badge-admin').innerHTML = '<span class="badge badge-purple" style="margin-right:.5rem">Admin</span>';
+    const _badge = document.getElementById('nav-badge-admin');
+    if (_badge) _badge.innerHTML = '<span class="badge badge-purple" style="margin-right:.25rem">Admin</span>';
   }
 
-  // ---- Cargar historial ----
   let codigoCreado = '';
 
   async function cargarHistorial() {
@@ -180,26 +197,23 @@
       const { reuniones } = await Api.get('/reuniones/historial');
       const lista = document.getElementById('historial-lista');
       if (!reuniones.length) {
-        lista.innerHTML = '<p class="text-muted text-sm" style="padding:.5rem 0">Aún no tienes reuniones. ¡Crea una!</p>';
+        lista.innerHTML = '<p class="text-muted text-sm" style="padding:.75rem 0">Aún no tienes reuniones. ¡Crea una!</p>';
         return;
       }
       lista.innerHTML = reuniones.map(r => `
         <div class="historial-item" onclick="irASala('${r.codigo}')">
-          <span style="font-size:1.3rem">${r.activa ? '🟢' : '⚪'}</span>
+          <span class="historial-dot ${r.activa ? 'active' : 'closed'}"></span>
           <div class="flex-1">
-            <div style="font-weight:600">${r.nombre || 'Sin nombre'}</div>
-            <div class="text-muted text-xs">${formatFecha(r.creada_en)} · ${r.total_mensajes} mensajes</div>
+            <div style="font-weight:600;font-size:.9rem">${r.nombre || 'Sin nombre'}</div>
+            <div class="text-muted text-xs" style="margin-top:.1rem">${formatFecha(r.creada_en)} · ${r.total_mensajes} mensajes</div>
           </div>
-          <span class="mono text-xs" style="color:var(--text-300)">${r.codigo}</span>
+          <span class="mono text-xs" style="color:var(--text-300);letter-spacing:.08em">${r.codigo}</span>
           <span class="badge ${r.activa ? 'badge-green' : 'badge-red'}">${r.activa ? 'Activa' : 'Cerrada'}</span>
-        </div>
-      `).join('');
+        </div>`).join('');
     } catch (e) { console.error(e); }
   }
-
   cargarHistorial();
 
-  // ---- Modales ----
   function abrirModalCrear()  { document.getElementById('modal-crear').style.display = 'flex'; }
   function abrirModalUnirse() { document.getElementById('modal-unirse').style.display = 'flex'; }
   function cerrarModal(id)    { document.getElementById(id).style.display = 'none'; }
@@ -219,25 +233,17 @@
     } catch (e) { toast(e.message, 'error'); }
   }
 
-  function copiarCodigo() {
-    navigator.clipboard.writeText(codigoCreado);
-    toast('Código copiado al portapapeles', 'success');
-  }
-
+  function copiarCodigo() { navigator.clipboard.writeText(codigoCreado); toast('Código copiado al portapapeles', 'success'); }
   function entrarASala() { irASala(codigoCreado); }
 
   async function unirseReunion() {
     const codigo = document.getElementById('unirse-codigo').value.trim().toUpperCase();
     if (!codigo) { toast('Ingresa el código de sala', 'error'); return; }
-    try {
-      await Api.get(`/reuniones/unirse/${codigo}`);
-      irASala(codigo);
-    } catch (e) { toast(e.message, 'error'); }
+    try { await Api.get(`/reuniones/unirse/${codigo}`); irASala(codigo); }
+    catch (e) { toast(e.message, 'error'); }
   }
 
-  function irASala(codigo) {
-    window.location.href = `reunion.html?sala=${codigo}`;
-  }
+  function irASala(codigo) { window.location.href = `reunion.html?sala=${codigo}`; }
 </script>
 </body>
 </html>

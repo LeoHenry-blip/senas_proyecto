@@ -3,14 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>🤟 Prueba de Reconocimiento de Señas</title>
+  <link rel="stylesheet" href="css/main.css">
+  <script src="js/navbar.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      background: #0a0d13; color: #e8edf5;
-      font-family: 'Segoe UI', sans-serif;
-      min-height: 100vh; padding: 1.5rem;
+      min-height: 100vh;
+      padding: 1.5rem;
+      padding-top: calc(62px + 1.5rem);
     }
-    h1 { font-size: 1.4rem; margin-bottom: 1rem; color: #4f8ef7; }
+
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      color: var(--accent);
+    }
 
     .layout {
       display: grid;
@@ -23,10 +31,10 @@
     .camara-wrap {
       position: relative;
       background: #000;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       overflow: hidden;
       aspect-ratio: 4/3;
-      border: 2px solid #2a3550;
+      border: 1px solid var(--border);
     }
     #video  { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
     #canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -35,121 +43,161 @@
     .panel { display: flex; flex-direction: column; gap: 1rem; }
 
     .card {
-      background: #151b25;
-      border: 1px solid #2a3550;
-      border-radius: 12px;
+      background: var(--bg-700);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
       padding: 1.25rem;
     }
-    .card h3 { font-size: .85rem; color: #738099; text-transform: uppercase;
-               letter-spacing: .06em; margin-bottom: .75rem; }
+    .card h3 {
+      font-size: .78rem;
+      color: var(--text-300);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: .75rem;
+      font-weight: 700;
+    }
 
     /* Letra grande */
     .letra-display {
-      font-size: 7rem; font-weight: 900; line-height: 1;
-      color: #4f8ef7; text-align: center;
-      text-shadow: 0 0 40px rgba(79,142,247,.4);
+      font-size: 7rem;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--accent);
+      text-align: center;
       min-height: 7rem;
     }
     .palabra-display {
-      font-size: 1.6rem; font-weight: 700;
-      color: #38d9a9; text-align: center; margin-top: .5rem;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent-2);
+      text-align: center;
+      margin-top: .5rem;
       min-height: 2rem;
     }
     .frase-display {
-      font-size: 1rem; color: #b0bcce; text-align: center;
-      margin-top: .4rem; min-height: 1.4rem;
+      font-size: 1rem;
+      color: var(--text-200);
+      text-align: center;
+      margin-top: .4rem;
+      min-height: 1.4rem;
       word-break: break-all;
     }
 
     /* Confianza */
     .conf-label {
-      display: flex; justify-content: space-between;
-      font-size: .8rem; color: #738099; margin-bottom: .4rem;
-    }
-    .progress {
-      width: 100%; height: 12px;
-      background: #1c2535; border-radius: 999px; overflow: hidden;
-    }
-    .progress-bar {
-      height: 100%; border-radius: 999px;
-      transition: width .15s ease, background .3s ease;
-      background: #4f8ef7;
+      display: flex;
+      justify-content: space-between;
+      font-size: .8rem;
+      color: var(--text-300);
+      margin-bottom: .4rem;
     }
 
     /* Top 3 candidatos */
     .candidatos { display: flex; flex-direction: column; gap: .4rem; }
     .cand-item {
-      display: flex; align-items: center; gap: .75rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
       padding: .45rem .75rem;
-      background: #1c2535; border-radius: 8px;
+      background: var(--bg-600);
+      border-radius: var(--radius-sm);
     }
     .cand-nombre {
-      font-family: monospace; font-weight: 700;
-      font-size: 1rem; min-width: 40px; color: #4f8ef7;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 1rem;
+      min-width: 40px;
+      color: var(--accent);
     }
-    .cand-bar-wrap { flex: 1; background: #0f1319; border-radius: 999px; height: 8px; overflow: hidden; }
-    .cand-bar { height: 100%; border-radius: 999px; background: #2a3550; transition: width .2s ease; }
-    .cand-pct { font-size: .78rem; color: #738099; min-width: 38px; text-align: right; }
+    .cand-bar-wrap {
+      flex: 1;
+      background: var(--bg-800);
+      border-radius: 999px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .cand-bar {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--border-light);
+      transition: width .2s ease;
+    }
+    .cand-pct {
+      font-size: .78rem;
+      color: var(--text-300);
+      min-width: 38px;
+      text-align: right;
+    }
 
     /* Historial */
     .historial-letras {
-      display: flex; flex-wrap: wrap; gap: .3rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .3rem;
       min-height: 36px;
     }
     .hist-letra {
-      background: #1c2535; border: 1px solid #2a3550;
-      border-radius: 6px; padding: .2rem .5rem;
-      font-family: monospace; font-size: .85rem; color: #b0bcce;
+      background: var(--bg-600);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      padding: .2rem .5rem;
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      color: var(--text-200);
       animation: popIn .15s ease;
     }
-    @keyframes popIn { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
-
-    /* Botones */
-    .botones { display: flex; gap: .5rem; flex-wrap: wrap; }
-    .btn {
-      padding: .5rem 1rem; border-radius: 8px; border: none;
-      font-size: .85rem; font-weight: 600; cursor: pointer;
-      transition: all .15s ease;
+    @keyframes popIn {
+      from { transform: scale(.5); opacity: 0; }
+      to   { transform: scale(1);  opacity: 1; }
     }
-    .btn-blue   { background: #4f8ef7; color: #fff; }
-    .btn-blue:hover { background: #3d7de8; }
-    .btn-green  { background: #22c55e; color: #fff; }
-    .btn-green:hover { background: #16a34a; }
-    .btn-red    { background: #ef4444; color: #fff; }
-    .btn-red:hover   { background: #dc2626; }
-    .btn-gray   { background: #1c2535; color: #b0bcce; border: 1px solid #2a3550; }
-    .btn-gray:hover  { background: #243048; }
 
     /* Estado */
     .estado-badge {
-      display: inline-flex; align-items: center; gap: .4rem;
-      padding: .3rem .75rem; border-radius: 999px;
-      font-size: .78rem; font-weight: 600;
-      background: rgba(239,68,68,.15); color: #ef4444;
-      border: 1px solid rgba(239,68,68,.3);
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .3rem .75rem;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 600;
+      background: rgba(244,63,94,.12);
+      color: var(--danger);
+      border: 1px solid rgba(244,63,94,.25);
     }
     .estado-badge.activo {
-      background: rgba(34,197,94,.15); color: #22c55e;
-      border-color: rgba(34,197,94,.3);
+      background: rgba(16,185,129,.12);
+      color: var(--success);
+      border-color: rgba(16,185,129,.25);
     }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
 
     /* Log */
     #log {
-      background: #0f1319; border-radius: 8px; padding: .75rem;
-      font-family: monospace; font-size: .75rem; color: #738099;
-      height: 100px; overflow-y: auto;
+      background: var(--bg-900);
+      border-radius: var(--radius-sm);
+      padding: .75rem;
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--text-300);
+      height: 100px;
+      overflow-y: auto;
     }
-    .log-ok   { color: #22c55e; }
-    .log-warn { color: #f59e0b; }
-    .log-err  { color: #ef4444; }
+    .log-ok   { color: var(--success); }
+    .log-warn { color: var(--warning); }
+    .log-err  { color: var(--danger); }
 
-    /* Mano detectada indicator */
     .mano-indicator {
-      text-align: center; font-size: .82rem; color: #738099;
+      text-align: center;
+      font-size: .82rem;
+      color: var(--text-300);
       margin-top: .4rem;
     }
-    .mano-indicator.detectada { color: #22c55e; }
+    .mano-indicator.detectada { color: var(--success); }
   </style>
 </head>
 <body>
@@ -169,22 +217,21 @@
       <span class="estado-badge" id="estado-badge">
         <span class="dot"></span> Cámara apagada
       </span>
-      <span id="fps-display" style="font-size:.78rem; color:#738099"></span>
+      <span id="fps-display" style="font-size:.78rem; color:var(--text-300)"></span>
     </div>
-    <div class="botones" style="margin-top:.75rem">
-      <button class="btn btn-blue"  onclick="iniciarCamara()">📷 Iniciar cámara</button>
-      <button class="btn btn-red"   onclick="detenerCamara()">⏹ Detener</button>
-      <button class="btn btn-gray"  onclick="limpiarTodo()">🗑 Limpiar</button>
+    <div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.75rem">
+      <button class="btn btn-primary btn-sm"  onclick="iniciarCamara()">📷 Iniciar cámara</button>
+      <button class="btn btn-danger  btn-sm"  onclick="detenerCamara()">⏹ Detener</button>
+      <button class="btn btn-ghost   btn-sm"  onclick="limpiarTodo()">🗑 Limpiar</button>
     </div>
   </div>
 
   <!-- PANEL DERECHO -->
   <div class="panel">
 
-    <!-- Gesto actual -->
     <div class="card">
       <h3>Gesto detectado</h3>
-      <div class="letra-display"  id="letra-display">—</div>
+      <div class="letra-display"   id="letra-display">—</div>
       <div class="palabra-display" id="palabra-display"></div>
       <div class="frase-display"   id="frase-display"></div>
       <div style="margin-top:.75rem">
@@ -198,21 +245,18 @@
       </div>
     </div>
 
-    <!-- Top candidatos -->
     <div class="card">
       <h3>Top 3 candidatos</h3>
       <div class="candidatos" id="candidatos">
-        <div style="color:#738099; font-size:.85rem">Inicia la cámara para ver candidatos</div>
+        <div style="color:var(--text-300); font-size:.85rem">Inicia la cámara para ver candidatos</div>
       </div>
     </div>
 
-    <!-- Historial de letras -->
     <div class="card">
       <h3>Historial de detecciones (últimas 20)</h3>
       <div class="historial-letras" id="historial"></div>
     </div>
 
-    <!-- Log de sistema -->
     <div class="card">
       <h3>Log del sistema</h3>
       <div id="log"></div>
@@ -222,30 +266,21 @@
 </div>
 
 <script>
-// ============================================================
-// CONFIGURACIÓN
-// ============================================================
 const API_BASE = window.location.origin + '/api';
-const TOKEN    = localStorage.getItem('token'); // Usa el token del login si existe
+const TOKEN    = localStorage.getItem('token');
 
-// ============================================================
-// ESTADO
-// ============================================================
-let stream        = null;
-let frameTimer    = null;
-let frameCount    = 0;
-let ultimaLetra   = '';
-let historialArr  = [];
-let fpsTimer      = null;
+let stream         = null;
+let frameTimer     = null;
+let frameCount     = 0;
+let ultimaLetra    = '';
+let historialArr   = [];
+let fpsTimer       = null;
 let framesEnviados = 0;
 
 const video  = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const ctx    = canvas.getContext('2d');
 
-// ============================================================
-// UTILIDADES DE LOG
-// ============================================================
 function log(msg, tipo = 'info') {
   const el  = document.getElementById('log');
   const cls = tipo === 'ok' ? 'log-ok' : tipo === 'error' ? 'log-err' : tipo === 'warn' ? 'log-warn' : '';
@@ -254,13 +289,9 @@ function log(msg, tipo = 'info') {
   line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
   el.appendChild(line);
   el.scrollTop = el.scrollHeight;
-  // Limitar a 50 líneas
   while (el.children.length > 50) el.removeChild(el.firstChild);
 }
 
-// ============================================================
-// CÁMARA
-// ============================================================
 async function iniciarCamara() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
@@ -272,23 +303,16 @@ async function iniciarCamara() {
     canvas.width  = 640;
     canvas.height = 480;
 
-    // Actualizar UI
     const badge = document.getElementById('estado-badge');
-    badge.textContent = '';
     badge.innerHTML = '<span class="dot"></span> Cámara activa';
     badge.classList.add('activo');
 
     log('Cámara iniciada correctamente', 'ok');
-
-    // Iniciar loop de captura a 15 FPS
     frameTimer = setInterval(capturarYEnviar, 1000 / 15);
-
-    // Contador de FPS
     fpsTimer = setInterval(() => {
       document.getElementById('fps-display').textContent = `${framesEnviados} fps`;
       framesEnviados = 0;
     }, 1000);
-
   } catch (e) {
     log('Error de cámara: ' + e.message, 'error');
     alert('No se pudo acceder a la cámara: ' + e.message);
@@ -300,32 +324,22 @@ function detenerCamara() {
   clearInterval(fpsTimer);
   stream?.getTracks().forEach(t => t.stop());
   video.srcObject = null;
-
   const badge = document.getElementById('estado-badge');
   badge.innerHTML = '<span class="dot"></span> Cámara apagada';
   badge.classList.remove('activo');
   log('Cámara detenida', 'warn');
 }
 
-// ============================================================
-// CAPTURA Y ENVÍO AL SERVIDOR
-// ============================================================
 async function capturarYEnviar() {
   if (!video.videoWidth) return;
-
   frameCount++;
   framesEnviados++;
-
-  // Dibujar frame espejado en canvas
   ctx.save();
   ctx.scale(-1, 1);
   ctx.drawImage(video, -640, 0, 640, 480);
   ctx.restore();
-
-  // Comprimir a JPEG base64
   const b64 = canvas.toDataURL('image/jpeg', 0.75).split(',')[1];
 
-  // Si hay token, usar el endpoint del servidor
   if (TOKEN) {
     try {
       const res = await fetch(`${API_BASE}/admin/extraer-landmarks`, {
@@ -337,30 +351,23 @@ async function capturarYEnviar() {
         body: JSON.stringify({ frame_b64: b64 })
       });
       const data = await res.json();
-
       if (data.landmarks) {
         document.getElementById('mano-indicator').textContent = '✋ Mano detectada';
         document.getElementById('mano-indicator').className = 'mano-indicator detectada';
-        // Buscar el gesto más cercano en el servidor
         buscarGestoLocal(data.landmarks);
       } else {
         document.getElementById('mano-indicator').textContent = 'Sin mano detectada';
         document.getElementById('mano-indicator').className = 'mano-indicator';
         limpiarDeteccion();
       }
-    } catch (e) {
-      log('Error al enviar frame: ' + e.message, 'error');
-    }
+    } catch (e) { log('Error al enviar frame: ' + e.message, 'error'); }
   } else {
     log('No hay token. Inicia sesión primero en localhost:8000', 'warn');
     clearInterval(frameTimer);
   }
 }
 
-// ============================================================
-// BUSCAR GESTO (comparar landmarks contra la base de datos)
-// ============================================================
-let gestosDB = null; // Cache de gestos
+let gestosDB = null;
 
 async function cargarGestos() {
   try {
@@ -370,9 +377,7 @@ async function cargarGestos() {
     const data = await res.json();
     gestosDB = data.gestos;
     log(`Base de datos cargada: ${gestosDB.length} gestos`, 'ok');
-  } catch (e) {
-    log('Error cargando gestos: ' + e.message, 'error');
-  }
+  } catch (e) { log('Error cargando gestos: ' + e.message, 'error'); }
 }
 
 function buscarGestoLocal(landmarks) {
@@ -381,50 +386,31 @@ function buscarGestoLocal(landmarks) {
     cargarGestos();
     return;
   }
-
-  // Calcular distancia euclidiana con cada gesto
   const resultados = gestosDB.map(g => {
     const vec = g.landmarks;
     if (!vec || vec.length !== 63) return { nombre: g.nombre, dist: 999 };
-
     let suma = 0;
     for (let i = 0; i < 63; i++) {
       const diff = (landmarks[i] || 0) - (vec[i] || 0);
       suma += diff * diff;
     }
-    const dist = Math.sqrt(suma);
-    return { nombre: g.nombre, tipo: g.tipo, dist };
+    return { nombre: g.nombre, tipo: g.tipo, dist: Math.sqrt(suma) };
   });
-
-  // Ordenar por distancia (menor = más similar)
   resultados.sort((a, b) => a.dist - b.dist);
-
   const mejor = resultados[0];
-  const umbral = 0.5; // Umbral de similitud
-
-  // Convertir distancia a confianza (0-1)
+  const umbral = 0.5;
   const confianza = Math.max(0, Math.min(1, 1 - (mejor.dist / umbral)));
-
-  // Actualizar UI con el mejor candidato
   actualizarUI(mejor.nombre, confianza, resultados.slice(0, 3), umbral);
 }
 
-// ============================================================
-// ACTUALIZAR UI
-// ============================================================
 function actualizarUI(nombre, confianza, top3, umbral) {
   const pct = Math.round(confianza * 100);
-
-  // Letra grande
   document.getElementById('letra-display').textContent = nombre || '?';
-
-  // Barra de confianza
   document.getElementById('conf-valor').textContent = pct + '%';
   const bar = document.getElementById('conf-bar');
   bar.style.width = pct + '%';
-  bar.style.background = pct > 70 ? '#22c55e' : pct > 40 ? '#f59e0b' : '#ef4444';
+  bar.style.background = pct > 70 ? 'var(--success)' : pct > 40 ? 'var(--warning)' : 'var(--danger)';
 
-  // Agregar al historial si es nueva y confianza > 50%
   if (nombre !== ultimaLetra && confianza > 0.5) {
     ultimaLetra = nombre;
     historialArr.push(nombre);
@@ -433,11 +419,10 @@ function actualizarUI(nombre, confianza, top3, umbral) {
     log(`Detectado: "${nombre}" (${pct}% confianza)`, confianza > 0.7 ? 'ok' : 'warn');
   }
 
-  // Top 3 candidatos
   const contenedor = document.getElementById('candidatos');
   contenedor.innerHTML = top3.map((c, i) => {
-    const conf = Math.max(0, Math.min(100, Math.round((1 - c.dist / umbral) * 100)));
-    const color = i === 0 ? '#4f8ef7' : i === 1 ? '#38d9a9' : '#738099';
+    const conf  = Math.max(0, Math.min(100, Math.round((1 - c.dist / umbral) * 100)));
+    const color = i === 0 ? 'var(--accent)' : i === 1 ? 'var(--accent-2)' : 'var(--text-300)';
     return `
       <div class="cand-item">
         <div class="cand-nombre" style="color:${color}">${c.nombre}</div>
@@ -445,16 +430,15 @@ function actualizarUI(nombre, confianza, top3, umbral) {
           <div class="cand-bar" style="width:${Math.max(0,conf)}%; background:${color}"></div>
         </div>
         <div class="cand-pct">${Math.max(0,conf)}%</div>
-        <div style="font-size:.72rem; color:#738099; min-width:32px">${c.tipo || ''}</div>
-      </div>
-    `;
+        <div style="font-size:.72rem; color:var(--text-300); min-width:32px">${c.tipo || ''}</div>
+      </div>`;
   }).join('');
 }
 
 function limpiarDeteccion() {
   document.getElementById('letra-display').textContent = '—';
-  document.getElementById('conf-valor').textContent = '0%';
-  document.getElementById('conf-bar').style.width = '0%';
+  document.getElementById('conf-valor').textContent    = '0%';
+  document.getElementById('conf-bar').style.width      = '0%';
 }
 
 function actualizarHistorial() {
@@ -463,23 +447,19 @@ function actualizarHistorial() {
 }
 
 function limpiarTodo() {
-  historialArr = [];
-  ultimaLetra  = '';
+  historialArr = []; ultimaLetra = '';
   actualizarHistorial();
   limpiarDeteccion();
   document.getElementById('palabra-display').textContent = '';
   document.getElementById('frase-display').textContent   = '';
   document.getElementById('candidatos').innerHTML =
-    '<div style="color:#738099; font-size:.85rem">Sin detecciones</div>';
+    '<div style="color:var(--text-300); font-size:.85rem">Sin detecciones</div>';
   log('Limpiado', 'warn');
 }
 
-// ============================================================
-// INICIO
-// ============================================================
 if (!TOKEN) {
   log('⚠️ No hay sesión activa. Ve a localhost:8000, inicia sesión y vuelve aquí.', 'error');
-  document.querySelector('.btn-blue').disabled = true;
+  document.querySelector('.btn-primary').disabled = true;
 } else {
   log('Token encontrado. Cargando base de datos de gestos...', 'ok');
   cargarGestos();

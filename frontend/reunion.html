@@ -4,19 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Señas V2 — Reunión</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
+  <script src="js/navbar.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body { overflow: hidden; margin: 0; background: #202124; }
+    body { overflow: hidden; margin: 0; }
 
-    /* ======================================================
-       LAYOUT
-    ====================================================== */
+    /* El navbar de reunión es muy compacto — reducimos altura y lo integramos */
+    .navbar {
+      height: 52px !important;
+      padding: 0 1rem !important;
+    }
+
     .sala-layout {
       display: grid;
       grid-template-columns: 320px 1fr 230px;
-      height: calc(100vh - 58px - 80px);
+      height: calc(100vh - 52px - 80px);
       overflow: hidden;
     }
     @media (max-width: 900px) {
@@ -28,9 +32,7 @@
       .panel-camara { border-right: none; border-bottom: 1px solid var(--border); }
     }
 
-    /* ======================================================
-       PANEL CÁMARA
-    ====================================================== */
+    /* PANEL CÁMARA */
     .panel-camara {
       background: var(--bg-800); border-right: 1px solid var(--border);
       display: flex; flex-direction: column; min-width: 0;
@@ -56,7 +58,7 @@
       background:#2d3748; border:3px solid #4a5568;
       display:flex; align-items:center; justify-content:center;
       font-size:1.9rem; font-weight:800; color:#e2e8f0;
-      box-shadow:0 0 24px rgba(79,142,247,.2);
+      box-shadow:0 0 24px rgba(99,102,241,.2);
     }
     .cam-placeholder .av-nombre { font-size:.82rem; font-weight:600; color:#a0aec0; }
     .cam-placeholder .av-estado {
@@ -74,9 +76,7 @@
     .palabra-display { font-size:.95rem; font-weight:600; color:var(--accent-2); margin-top:.15rem; }
     .frase-display   { font-size:.78rem; color:var(--text-200); margin-top:.15rem; min-height:1em; word-break:break-all; }
 
-    /* ======================================================
-       PANEL CHAT
-    ====================================================== */
+    /* PANEL CHAT */
     .panel-chat { display:flex; flex-direction:column; background:var(--bg-900); overflow:hidden; min-width:0; }
     .chat-header {
       padding:.5rem .8rem; background:var(--bg-800); border-bottom:1px solid var(--border);
@@ -93,7 +93,7 @@
       padding:.5rem .75rem; max-width:100%;
     }
     .mensaje-burbuja.propio .msg-contenido {
-      background:rgba(79,142,247,.13); border-color:rgba(79,142,247,.3);
+      background:rgba(99,102,241,.13); border-color:rgba(99,102,241,.3);
       border-bottom-right-radius:2px; border-bottom-left-radius:var(--radius-md);
     }
     .msg-autor { font-size:.65rem; font-weight:700; color:var(--accent); margin-bottom:.12rem; }
@@ -122,9 +122,7 @@
     }
     .chat-input-area textarea:focus { border-color:var(--accent); }
 
-    /* ======================================================
-       PANEL PARTICIPANTES
-    ====================================================== */
+    /* PANEL PARTICIPANTES */
     .panel-participantes {
       background:var(--bg-800); border-left:1px solid var(--border);
       display:flex; flex-direction:column; overflow:hidden; min-width:0;
@@ -146,64 +144,39 @@
     .video-peer-avatar .avn { font-size:.65rem;color:var(--text-300); }
     .video-peer-label { position:absolute;bottom:3px;left:5px;font-size:.62rem;background:rgba(0,0,0,.7);color:#fff;padding:2px 5px;border-radius:4px; }
 
-    /* ======================================================
-       BARRA INFERIOR ESTILO GOOGLE MEET CON ICONOS SVG
-    ====================================================== */
+    /* BARRA INFERIOR MEET */
     .meet-bar {
       position: fixed; bottom: 0; left: 0; right: 0; height: 80px;
-      background: #202124;
-      border-top: 1px solid #3c4043;
+      background: #202124; border-top: 1px solid #3c4043;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 1.25rem; z-index: 100;
-      gap: 1rem;
+      padding: 0 1.25rem; z-index: 100; gap: 1rem;
     }
-
-    /* Izquierda */
-    .meet-left {
-      display: flex; align-items: center; gap: .65rem;
-      min-width: 160px;
-    }
+    .meet-left { display: flex; align-items: center; gap: .65rem; min-width: 160px; }
     .meet-time { font-size: .82rem; color: #e8eaed; font-weight: 500; letter-spacing: .03em; }
     .meet-dot  { width: 6px; height: 6px; border-radius: 50%; background: #34a853; }
     .meet-code { font-size: .7rem; color: #9aa0a6; font-family: monospace; }
-
-    /* Centro */
     .meet-center { display: flex; align-items: center; gap: .35rem; }
+    .meet-right { display: flex; align-items: center; gap: .35rem; min-width: 160px; justify-content: flex-end; }
 
-    /* Derecha */
-    .meet-right {
-      display: flex; align-items: center; gap: .35rem;
-      min-width: 160px; justify-content: flex-end;
-    }
-
-    /* ---- Botón base ---- */
     .mb {
-      position: relative;
-      width: 48px; height: 48px; border-radius: 50%;
+      position: relative; width: 48px; height: 48px; border-radius: 50%;
       border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       background: #3c4043; color: #e8eaed;
-      transition: background .15s ease, transform .12s ease;
-      flex-shrink: 0;
+      transition: background .15s ease, transform .12s ease; flex-shrink: 0;
     }
     .mb:hover { background: #5f6368; transform: scale(1.06); }
     .mb svg   { width: 22px; height: 22px; pointer-events: none; }
-
-    /* Estado apagado: fondo rojo suave */
     .mb.off { background: #f28b82; color: #202124; }
     .mb.off:hover { background: #ee675c; }
     .mb.off svg { stroke: #202124; }
-
-    /* Estado activo: azul */
     .mb.on  { background: #8ab4f8; color: #202124; }
     .mb.on:hover { background: #669df6; }
     .mb.on svg { stroke: #202124; }
 
-    /* ---- Grupo doble (cámara/mic con flecha) ---- */
     .mb-group {
       display: flex; align-items: center;
-      background: #3c4043; border-radius: 999px;
-      overflow: hidden; transition: opacity .15s ease;
+      background: #3c4043; border-radius: 999px; overflow: hidden;
     }
     .mb-group .mb-main {
       width: 48px; height: 48px; border: none; cursor: pointer;
@@ -213,7 +186,6 @@
     }
     .mb-group .mb-main:hover { background: rgba(255,255,255,.1); }
     .mb-group .mb-main svg { width:22px; height:22px; pointer-events:none; }
-
     .mb-group .mb-arr {
       width: 20px; height: 48px; border: none; cursor: pointer;
       background: transparent; color: #9aa0a6;
@@ -223,8 +195,6 @@
     }
     .mb-group .mb-arr:hover { background: rgba(255,255,255,.1); color: #e8eaed; }
     .mb-group .mb-arr svg { width:12px; height:12px; pointer-events:none; }
-
-    /* Cuando apagado: fondo rojo */
     .mb-group.off { background: #f28b82; }
     .mb-group.off .mb-main { color: #202124; }
     .mb-group.off .mb-main svg { stroke: #202124; }
@@ -233,20 +203,17 @@
     .mb-group.off .mb-main:hover,
     .mb-group.off .mb-arr:hover { background: rgba(0,0,0,.1); }
 
-    /* ---- Botón salir (rojo sólido) ---- */
     .mb-end {
       height: 48px; padding: 0 1.4rem; border-radius: 999px;
       border: none; cursor: pointer;
       background: #ea4335; color: #fff;
       display: flex; align-items: center; justify-content: center; gap: .4rem;
       font-size: .82rem; font-weight: 600;
-      transition: background .15s ease, transform .12s ease;
-      flex-shrink: 0;
+      transition: background .15s ease, transform .12s ease; flex-shrink: 0;
     }
     .mb-end:hover { background: #d33426; transform: scale(1.04); }
     .mb-end svg { width: 18px; height: 18px; pointer-events: none; }
 
-    /* ---- Tooltip ---- */
     [data-tip] { position: relative; }
     [data-tip]:hover::after {
       content: attr(data-tip);
@@ -258,7 +225,6 @@
       pointer-events: none; z-index: 200;
     }
 
-    /* ---- Indicador mano ---- */
     .mano-dot {
       position: absolute; top: -3px; right: -3px;
       width: 14px; height: 14px; border-radius: 50%;
@@ -267,20 +233,16 @@
       color: #202124; font-weight: 800;
     }
 
-    /* Responsive barra */
     @media (max-width: 600px) {
       .meet-bar { padding: 0 .6rem; gap: .35rem; }
       .meet-left, .meet-right { min-width: auto; }
       .meet-code { display: none; }
-      .mb        { width: 42px; height: 42px; }
+      .mb { width: 42px; height: 42px; }
       .mb-group .mb-main { width: 42px; height: 42px; }
       .mb-group .mb-arr  { width: 16px; height: 42px; }
-      .mb-end    { height: 42px; padding: 0 .9rem; font-size: .75rem; }
+      .mb-end { height: 42px; padding: 0 .9rem; font-size: .75rem; }
     }
 
-    /* ======================================================
-       OVERLAY SALA CERRADA
-    ====================================================== */
     .sala-cerrada-overlay {
       position:fixed; inset:0; background:rgba(0,0,0,.88);
       display:flex; align-items:center; justify-content:center; z-index:9999;
@@ -290,28 +252,10 @@
       border-radius:var(--radius-xl); padding:2rem;
       text-align:center; max-width:360px; width:90%;
     }
-
-    /* Badge creador */
     #badge-creador { margin-right: .4rem; }
   </style>
 </head>
 <body>
-
-<!-- NAVBAR -->
-<nav class="navbar">
-  <a href="dashboard.html" style="color:var(--text-300);font-size:.8rem;display:flex;align-items:center;gap:.3rem">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    Dashboard
-  </a>
-  <span class="navbar-brand" style="margin-left:.5rem">Señas V2</span>
-  <span id="nav-sala-codigo" class="sala-codigo" style="margin-left:.4rem"></span>
-  <div class="navbar-nav">
-    <span id="badge-creador" style="display:none" class="badge badge-purple">Creador</span>
-    <button class="btn btn-icon" title="Copiar código" onclick="copiarCodigo()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    </button>
-  </div>
-</nav>
 
 <!-- LAYOUT -->
 <div class="sala-layout">
@@ -392,14 +336,10 @@
     </div>
   </div>
 
-</div><!-- /sala-layout -->
+</div>
 
-<!-- ======================================================
-     BARRA INFERIOR ESTILO GOOGLE MEET
-====================================================== -->
+<!-- BARRA INFERIOR MEET -->
 <div class="meet-bar">
-
-  <!-- Izquierda: hora + código -->
   <div class="meet-left">
     <div class="meet-dot"></div>
     <div>
@@ -408,13 +348,10 @@
     </div>
   </div>
 
-  <!-- Centro: controles principales -->
   <div class="meet-center">
-
-    <!-- MICRÓFONO (grupo con flecha) -->
+    <!-- MICRÓFONO -->
     <div class="mb-group off" id="grp-mic" data-tip="Micrófono">
       <button class="mb-main" onclick="toggleMic()">
-        <!-- Icono mic apagado por defecto -->
         <svg id="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="1" y1="1" x2="23" y2="23"/>
           <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
@@ -427,10 +364,9 @@
       </button>
     </div>
 
-    <!-- CÁMARA (grupo con flecha → abre selector) -->
+    <!-- CÁMARA -->
     <div class="mb-group off" id="grp-cam" data-tip="Cámara">
       <button class="mb-main" id="btn-cam-main" onclick="toggleCamara(event)">
-        <!-- Icono cámara apagada por defecto -->
         <svg id="icon-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="1" y1="1" x2="23" y2="23"/>
           <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34"/>
@@ -452,22 +388,20 @@
       </svg>
     </button>
 
-    <!-- CONFIRMAR FRASE DE SEÑAS -->
+    <!-- CONFIRMAR FRASE -->
     <button class="mb" data-tip="Confirmar frase" onclick="finFrase()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="5 3 19 12 5 21 5 3"/>
-      </svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
     </button>
 
-    <!-- LIMPIAR TEXTO -->
+    <!-- LIMPIAR -->
     <button class="mb" data-tip="Limpiar" onclick="limpiarRecono()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
-        <path d="M9 6V4h6v2"/>
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+        <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
       </svg>
     </button>
 
-    <!-- AUDIO TTS -->
+    <!-- AUDIO -->
     <button class="mb on" id="btn-audio" data-tip="Audio" onclick="toggleAudio()">
       <svg id="icon-audio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -475,29 +409,23 @@
         <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
       </svg>
     </button>
+  </div>
 
-  </div><!-- /meet-center -->
-
-  <!-- Derecha: salir / cerrar -->
   <div class="meet-right">
-    <!-- Salir (solo yo) -->
     <button class="mb-end" data-tip="Salir" onclick="salirDeSala()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px">
         <path d="M16 17l5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
       </svg>
       Salir
     </button>
-    <!-- Cerrar sala (solo creador) -->
-    <button class="mb off" id="btn-cerrar-sala" data-tip="Cerrar sala para todos"
-            style="display:none" onclick="cerrarSala()">
+    <button class="mb off" id="btn-cerrar-sala" data-tip="Cerrar sala para todos" style="display:none" onclick="cerrarSala()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.43 9.6a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 3.54 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.5 8.9"/>
         <line x1="1" y1="1" x2="23" y2="23"/>
       </svg>
     </button>
   </div>
-
-</div><!-- /meet-bar -->
+</div>
 
 <div id="toast-container"></div>
 <canvas id="canvas-captura" style="display:none" width="640" height="480"></canvas>
@@ -511,7 +439,11 @@
   if (!SALA_ID) window.location.href = 'dashboard.html';
 
   const usuario = Auth.usuario();
-  document.getElementById('nav-sala-codigo').textContent     = SALA_ID;
+
+  // Actualizar navbar inyectado por navbar.js
+  const _navNombre = document.getElementById('nav-nombre');
+  if (_navNombre) _navNombre.textContent = usuario.nombre;
+
   document.getElementById('chat-codigo-display').textContent = SALA_ID;
   document.getElementById('chat-titulo').textContent         = `Reunión ${SALA_ID}`;
   document.getElementById('meet-code').textContent           = SALA_ID;
@@ -529,26 +461,24 @@
   let mensajesMap   = {};
   let soyCreador    = false;
 
-  // Reloj
   const _updateTime = () => {
     document.getElementById('meet-hora').textContent =
       new Date().toLocaleTimeString('es', { hour:'2-digit', minute:'2-digit' });
   };
   _updateTime(); setInterval(_updateTime, 1000);
 
-  // ---- Verificar creador ----
   async function verificarSiEsCreador() {
     try {
       const res = await Api.get(`/reuniones/${SALA_ID}/info`);
       soyCreador = res.es_creador;
       if (soyCreador) {
         document.getElementById('btn-cerrar-sala').style.display = '';
-        document.getElementById('badge-creador').style.display   = '';
+        const badge = document.getElementById('nav-badge-admin');
+        if (badge) badge.innerHTML = '<span class="badge badge-purple" style="margin-right:.4rem">Creador</span>';
       }
     } catch(e) {}
   }
 
-  // ---- WebSocket ----
   function conectarWS() {
     salaWS = new SalaWS(SALA_ID, {
       onConectado:     () => { toast('Conectado', 'success'); cargarHistorial(); },
@@ -566,7 +496,6 @@
   }
   conectarWS(); verificarSiEsCreador();
 
-  // ---- Historial ----
   async function cargarHistorial() {
     try {
       const { mensajes } = await Api.get(`/reuniones/${SALA_ID}/mensajes`);
@@ -576,7 +505,6 @@
     } catch(e) {}
   }
 
-  // ---- Mensajes ----
   function addMsg(d, scroll=true) {
     const propio = d.usuario_id === usuario.id;
     const div = document.createElement('div');
@@ -618,7 +546,6 @@
 
   function scrollEnd() { const c=document.getElementById('chat-mensajes'); c.scrollTop=c.scrollHeight; }
 
-  // ---- Subtítulos ----
   let subTimer=null;
   function recibirTraduccion(d) {
     if (!d.frase_completa&&!d.palabra_actual) return;
@@ -629,7 +556,6 @@
   }
   function limpiarSub() { document.getElementById('subtitulos-live').style.display='none'; }
 
-  // ---- Participantes ----
   function actualizarParticipantes(d) {
     const parts=d.participantes||[];
     document.getElementById('chat-participantes-count').textContent=
@@ -643,8 +569,6 @@
         </div>`).join('')||'<div class="part-item text-muted text-sm">Sin participantes</div>';
   }
 
-  // ---- CÁMARA ----
-  // SVGs para los dos estados
   const SVG_CAM_ON  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`;
   const SVG_CAM_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34"/><circle cx="12" cy="13" r="3"/></svg>`;
   const SVG_MIC_ON  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`;
@@ -657,10 +581,8 @@
       const videoEl  = document.getElementById('video-local');
       const canvasEl = document.getElementById('canvas-captura');
       const anchor   = document.getElementById('grp-cam');
-
       capturador = new CapturadorCamara(videoEl, canvasEl, (b64) => salaWS?.enviarFrame(b64), 12);
       const ok   = await capturador.iniciar(anchor);
-
       if (ok) {
         camaraActiva = true;
         videoEl.style.display = 'block';
@@ -669,9 +591,7 @@
         document.getElementById('cam-estado').textContent        = 'Activa';
         document.getElementById('btn-cam-main').innerHTML        = SVG_CAM_ON;
         document.getElementById('grp-cam').classList.remove('off');
-      } else {
-        capturador = null;
-      }
+      } else { capturador = null; }
     } else {
       capturador?.detener(); capturador=null; camaraActiva=false;
       const videoEl = document.getElementById('video-local');
@@ -691,7 +611,6 @@
     await capturador.switchCamara(anchor);
   }
 
-  // ---- Micrófono ----
   function toggleMic() {
     micActivo = !micActivo;
     const grp = document.getElementById('grp-mic');
@@ -700,7 +619,6 @@
     toast(micActivo ? 'Micrófono activado' : 'Micrófono silenciado', 'info');
   }
 
-  // ---- Audio TTS ----
   function toggleAudio() {
     audioActivo = !audioActivo;
     const btn = document.getElementById('btn-audio');
@@ -709,7 +627,6 @@
     btn.classList.toggle('off', !audioActivo);
   }
 
-  // ---- Levantar mano ----
   function toggleMano() {
     manoLevantada = !manoLevantada;
     const btn = document.getElementById('btn-mano');
@@ -717,12 +634,9 @@
     if (manoLevantada) {
       btn.insertAdjacentHTML('beforeend', '<div class="mano-dot">!</div>');
       toast('Mano levantada — todos lo ven', 'info');
-    } else {
-      btn.querySelector('.mano-dot')?.remove();
-    }
+    } else { btn.querySelector('.mano-dot')?.remove(); }
   }
 
-  // ---- Controles señas ----
   function finFrase()      { salaWS?.finFrase(); }
   function limpiarRecono() {
     salaWS?.limpiar();
@@ -733,7 +647,10 @@
     document.getElementById('confianza-valor').textContent = '0%';
   }
 
-  function copiarCodigo() { navigator.clipboard.writeText(SALA_ID); toast('Código copiado','success'); }
+  function enviarTexto() {
+    const i=document.getElementById('chat-input'); const t=i.value.trim();
+    if (!t) return; salaWS?.enviarTexto(t); i.value='';
+  }
 
   function actualizarReconoUI(letra, palabra, frase, confianza) {
     document.getElementById('letra-display').textContent   = letra||'—';
@@ -746,7 +663,6 @@
     b.className=`progress-bar ${pct>70?'green':pct>40?'yellow':'red'}`;
   }
 
-  // ---- Salir / Cerrar ----
   function _limpiar() {
     capturador?.detener(); webrtc?.colgar(); synth?.cancel();
     const v=document.getElementById('video-local');
@@ -772,13 +688,6 @@
     document.body.appendChild(o);
   }
 
-  // ---- Enviar texto ----
-  function enviarTexto() {
-    const i=document.getElementById('chat-input'); const t=i.value.trim();
-    if (!t) return; salaWS?.enviarTexto(t); i.value='';
-  }
-
-  // ---- Video remoto ----
   function agregarVideoRemoto(uid,stream) {
     const c=document.getElementById('videos-remotos');
     c.querySelector('.text-muted')?.remove();
@@ -790,7 +699,6 @@
   }
   document.addEventListener('webrtc:stream',(e)=>agregarVideoRemoto(e.detail.usuarioId,e.detail.stream));
 
-  // ---- Voz ----
   function hablar(txt) {
     if (!synth||!audioActivo) return;
     synth.cancel(); const u=new SpeechSynthesisUtterance(txt); u.lang='es-MX'; u.rate=1.0; synth.speak(u);

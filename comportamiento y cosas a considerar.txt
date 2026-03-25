@@ -1,0 +1,25 @@
+PROYECTO DE SEÑAS (I-2026)
+#Idea Principal= Se propone un sistema cuyo funcionamiento es el siguinte: dos actores el sordomudo que hablara en señas y le llega al receptor una persona
+ que no sabe lenguaje de señas a el llegara como subtitulos, de lo que se dijo el sordomudo y de la persona le llegara subtitulos posibilitando la conversación en tiempo real.
+ 
+#Interfaz= 1)Ingresamos a nuestro navegador (nos logueamos)
+           2)Nos transporta al Panel Principal del Usuario
+           3)Podemos Iniciar una nueva reunion, unirnos a otra o si eres Admin (realizar el entrenamiento de señas).
+           4)Al Ingresar a una reunion la pantalla se divide en 3 secciones. 
+            Seccion a) Camara de Usuario 1 (lado izquierdo)
+            Seccion b) Chat en vivo de la conversacion (centro)
+            Seccion c) Camara del Usuario 2 (lado derecho)
+           5)Cuestion= El programa lee las señas de ambos usuarios para eliminar la brecha de comunicacion entre ambos, no hay
+           diferencias entre persona con discapacidad y otra que no.
+           6) Lo que la pantalla debe reproducir es subtitulos de la conversacion y sonido de lo que esta diciendo.
+        →El objetivo principal de este proyecto es eliminar la brecha de comunicaion entre una persona con discapacida y su entorno.
+
+
+
+#PROCESO PARA ENTRAR AL CODIGO:
+1) EJECUTAR ESTOS 2 COMANDOS:
+powershellcd C:\xampp\htdocs\files\backend
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+2)ENTRA A CHROME Y COLOCA ESTO EN EL BUSCADOR:
+ http://localhost:8000
+ #Listo ya esta funcionando!
