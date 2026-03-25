@@ -2,6 +2,11 @@
    js/navbar.js — Navbar compartido + toggle de tema
    Incluir en TODOS los HTML con:
    <script src="js/navbar.js"></script>
+
+   MODO SOLO TEMA (sub-páginas en iframe):
+   Agrega data-theme-only al <body> para que no renderice
+   el navbar, solo aplique y sincronice el tema.
+   <body data-theme-only>
    ============================================================ */
 (function () {
   const THEME_KEY = 'senas-v2-theme';
@@ -35,7 +40,6 @@
     Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
     document.body.classList.toggle('light-mode', isLight);
     document.body.dataset.theme = isLight ? 'light' : 'dark';
-
     // Actualiza el ícono del botón (puede no existir aún al llamarse)
     const btn = document.getElementById('theme-toggle');
     if (btn) {
@@ -46,12 +50,13 @@
 
   // ---- Inyecta el navbar en el <body> ----
   function renderNavbar() {
-    // Si la página ya tiene su propio navbar estático, NO lo duplica
-    if (document.querySelector('.navbar')) {
-      setupToggle(); // Solo engancha el botón existente
-      return;
-    }
+    // Modo solo-tema: sub-página en iframe, no necesita navbar
+    if (document.body.hasAttribute('data-theme-only')) return;
 
+    // Si la página ya tiene su propio navbar estático, NO lo duplica
+    if (document.querySelector('.navbar')) return;
+
+    // Sin navbar propio → crea uno genérico
     const nav = document.createElement('nav');
     nav.className = 'navbar';
     nav.innerHTML = `
@@ -66,21 +71,20 @@
     document.body.insertBefore(nav, document.body.firstChild);
   }
 
-  // ---- Engancha el botón de tema ----
+  // ---- Engancha el botón de tema con delegación de eventos ----
+  // Delegación en document: funciona sin importar cuándo
+  // se crea el botón ni si el DOM aún no está completo.
   function setupToggle() {
-    const btn = document.getElementById('theme-toggle');
-    if (!btn) return;
-
-    btn.addEventListener('click', () => {
-      const willBeLight = document.body.dataset.theme !== 'light';
-      localStorage.setItem(THEME_KEY, willBeLight ? 'light' : 'dark');
-      applyTheme(willBeLight);
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#theme-toggle')) {
+        const willBeLight = document.body.dataset.theme !== 'light';
+        localStorage.setItem(THEME_KEY, willBeLight ? 'light' : 'dark');
+        applyTheme(willBeLight);
+      }
     });
   }
 
-  // ---- Sincroniza entre pestañas (StorageEvent) ----
-  // Cuando el usuario cambia el tema en una pestaña,
-  // TODAS las demás pestañas abiertas se actualizan solas.
+  // ---- Sincroniza entre pestañas e iframes (StorageEvent) ----
   window.addEventListener('storage', (e) => {
     if (e.key === THEME_KEY) {
       applyTheme(e.newValue === 'light');

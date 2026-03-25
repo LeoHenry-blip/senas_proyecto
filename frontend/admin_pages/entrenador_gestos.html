@@ -35,11 +35,15 @@
     @keyframes parpadeo { 0%,100%{opacity:1} 50%{opacity:.3} }
     .rec-dot { width:8px; height:8px; border-radius:50%; background:#fff; animation:parpadeo .8s infinite; }
     .captura-estado { display:flex; align-items:center; gap:.5rem; padding:.6rem .75rem; margin-top:.6rem; background:var(--bg-700); border:1px solid var(--border); border-radius:var(--radius-md); font-size:.83rem; color:var(--text-300); }
-    /* Indicador de normalización */
     .norm-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .5rem; border-radius:4px; font-size:.7rem; font-weight:600; background:rgba(34,197,94,.12); color:var(--success); border:1px solid rgba(34,197,94,.2); margin-left:.4rem; }
   </style>
 </head>
-<body>
+
+<!--
+  data-theme-only → navbar.js NO renderiza navbar aquí (es un iframe).
+  Solo aplica el tema guardado y lo sincroniza en tiempo real.
+-->
+<body data-theme-only>
 
 <h2 style="margin-bottom:1.5rem">🖐️ Entrenador de gestos
   <span class="norm-badge">✓ normalización 3 capas</span>
@@ -144,24 +148,16 @@
   </div>
 </div>
 
+<!-- navbar.js: modo solo-tema por data-theme-only en <body> -->
+<script src="../js/navbar.js"></script>
 <script src="../js/app.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
 // NORMALIZACIÓN — idéntica a NormalizadorMano en base_datos.py
 // ═══════════════════════════════════════════════════════════════
-/**
- * Normaliza un vector de 63 floats en 3 capas:
- *  1. Resta muñeca (punto 0) → independiente de posición
- *  2. Escala por dist muñeca-dedo-medio (punto 9) → independiente de tamaño
- *  3. Vector unitario → independiente de escala global
- *
- * Debe ser idéntica a NormalizadorMano._aplicar() en Python.
- */
 function normalizarVector(v) {
-  // v = Float32Array o Array de 63 floats
-  const out = new Float32Array(v);   // copia
+  const out = new Float32Array(v);
 
-  // Capa 1: restar muñeca (índice 0 → x,y,z = [0,1,2])
   const wx = out[0], wy = out[1], wz = out[2];
   for (let i = 0; i < 21; i++) {
     out[i*3]     -= wx;
@@ -169,14 +165,12 @@ function normalizarVector(v) {
     out[i*3 + 2] -= wz;
   }
 
-  // Capa 2: escalar por distancia muñeca → dedo medio (punto 9)
   const refX = out[9*3], refY = out[9*3 + 1];
   const dist  = Math.sqrt(refX*refX + refY*refY);
   if (dist > 1e-6) {
     for (let i = 0; i < 63; i++) out[i] /= dist;
   }
 
-  // Capa 3: vector unitario
   let norma = 0;
   for (let i = 0; i < 63; i++) norma += out[i]*out[i];
   norma = Math.sqrt(norma);
@@ -260,7 +254,6 @@ function desactivarCamara() {
   resetCaptura(); resetCapturaDTW();
 }
 
-// ─── Captura frame y extrae landmarks del servidor ───────────
 function capturarFrameB64() {
   const canvas = document.getElementById('cam-canvas');
   const video  = document.getElementById('cam-video');
@@ -273,11 +266,6 @@ function capturarFrameB64() {
 }
 
 async function extraerYNormalizar(b64) {
-  /**
-   * Llama al servidor para obtener landmarks crudos de MediaPipe,
-   * luego aplica normalización 3 capas ANTES de devolver.
-   * Esto garantiza que lo que se guarda es comparable entre sesiones.
-   */
   const res = await fetch('/api/admin/extraer-landmarks', {
     method: 'POST',
     headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${Auth.token()}` },
@@ -285,8 +273,6 @@ async function extraerYNormalizar(b64) {
   });
   const data = await res.json();
   if (!data.landmarks || data.landmarks.length !== 63) return null;
-
-  // NORMALIZAR aquí, no delegar al Python al leer
   return normalizarVector(data.landmarks);
 }
 
@@ -340,7 +326,6 @@ async function guardarGesto() {
   if (!muestras.length) { toast('Primero captura muestras', 'error'); return; }
   const nombre = document.getElementById('gesto-nombre').value.trim().toUpperCase();
   const desc   = document.getElementById('gesto-desc').value.trim();
-  // Promediar los vectores ya normalizados
   const promedio = muestras[0].map((_,i) =>
     muestras.reduce((s,m) => s + m[i], 0) / muestras.length
   );
@@ -369,7 +354,7 @@ function resetCaptura(limpiarEstado = true) {
 // ═══════════════════════════════════════════════════════════════
 // MODO PALABRA — captura DTW (3 repeticiones)
 // ═══════════════════════════════════════════════════════════════
-let secuenciasDTW = [];   // [ [[63f]×10], [[63f]×10], [[63f]×10] ]
+let secuenciasDTW = [];
 let repActual     = 0;
 let grabandoDTW   = false;
 
@@ -388,7 +373,6 @@ async function grabarRepeticion() {
   setEstado(`🔴 Grabando rep ${repActual+1}/3... ¡Haz el movimiento ahora!`);
   document.getElementById('rec-badge').classList.add('visible');
 
-  // Capturar hasta 40 frames durante ~2.5s y normalizar cada uno
   const framesNorm = [];
   for (let i = 0; i < 40 && grabandoDTW; i++) {
     try {
@@ -403,7 +387,6 @@ async function grabarRepeticion() {
   document.getElementById('rec-badge').classList.remove('visible');
 
   if (framesNorm.length >= 5) {
-    // Resamplear a 10 frames (ya normalizados)
     const seq10 = _resamplear(framesNorm, 10);
     secuenciasDTW.push(seq10);
 
@@ -436,24 +419,13 @@ async function guardarPalabraDTW() {
   if (secuenciasDTW.length < 3) { toast('Necesitas 3 repeticiones', 'error'); return; }
   const nombre = document.getElementById('gesto-nombre').value.trim().toUpperCase();
   const desc   = document.getElementById('gesto-desc').value.trim();
-
-  /**
-   * Estructura que espera base_datos.py _cargar_palabra():
-   *   secuencia: [
-   *     [[63f], [63f], ..., [63f]],   <- rep 1: 10 frames
-   *     [[63f], [63f], ..., [63f]],   <- rep 2: 10 frames
-   *     [[63f], [63f], ..., [63f]],   <- rep 3: 10 frames
-   *   ]
-   * cada elemento de secuenciasDTW ya ES esa lista de 10 frames.
-   * Los floats ya están normalizados (3 capas).
-   */
   try {
     await Api.post('/admin/gestos', {
       nombre,
       tipo:           'word',
       descripcion:    desc || `Palabra con movimiento: ${nombre}`,
-      secuencia:      secuenciasDTW,          // [[[63f]×10], ...]
-      landmarks:      secuenciasDTW[0][0],    // primer frame, compatibilidad legacy
+      secuencia:      secuenciasDTW,
+      landmarks:      secuenciasDTW[0][0],
       muestras_usadas: secuenciasDTW.length
     });
     toast(`Palabra "${nombre}" guardada con DTW (normalizada)`, 'success');

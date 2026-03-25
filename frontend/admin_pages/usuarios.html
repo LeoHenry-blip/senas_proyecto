@@ -27,7 +27,6 @@
     .search-input:focus   { border-color: var(--accent); }
     .search-input::placeholder { color: var(--text-300); }
 
-    /* Tabla */
     .tabla-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
     .tabla { width: 100%; border-collapse: collapse; font-size: .85rem; }
     .tabla thead tr { background: var(--bg-700); }
@@ -68,14 +67,13 @@
       text-align: center; padding: 3rem; color: var(--text-300);
     }
 
-    /* Paginación simple */
     .paginacion {
       display: flex; justify-content: flex-end; align-items: center;
       gap: .5rem; margin-top: 1rem; font-size: .82rem; color: var(--text-300);
     }
   </style>
 </head>
-<body>
+<body data-theme-only>
 
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem">
   <h2>👥 Usuarios del sistema</h2>
@@ -109,6 +107,7 @@
 
 <div class="paginacion" id="paginacion"></div>
 
+<script src="../js/navbar.js"></script>
 <script src="../js/app.js"></script>
 <script>
   let todosUsuarios = [];
@@ -187,19 +186,17 @@
     try {
       await Api.patch(`/admin/usuarios/${id}`, { rol });
       toast('Rol actualizado', 'success');
-      // Actualizar en cache local
       const u = todosUsuarios.find(u => u.id === id);
       if (u) u.rol = rol;
     } catch(e) {
       toast(e.message, 'error');
-      cargarUsuarios(); // Revertir
+      cargarUsuarios();
     }
   }
 
   async function toggleActivo(id, activo) {
     try {
       await Api.patch(`/admin/usuarios/${id}`, { activo: activo ? 0 : 1 });
-      // Actualizar localmente
       const u = todosUsuarios.find(u => u.id === id);
       if (u) u.activo = activo ? 0 : 1;
       filtrarUsuarios();

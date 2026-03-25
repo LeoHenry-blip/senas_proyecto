@@ -54,7 +54,7 @@
     .save-feedback.visible { opacity: 1; }
   </style>
 </head>
-<body>
+<body data-theme-only>
 
 <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem">
   <div>
@@ -75,6 +75,7 @@
   <span class="save-feedback" id="save-feedback">✅ Guardado correctamente</span>
 </div>
 
+<script src="../js/navbar.js"></script>
 <script src="../js/app.js"></script>
 <script>
   const CONFIG_META = {
@@ -130,7 +131,6 @@
   }
 
   function renderConfig(config) {
-    // Agrupar
     const grupos = {};
     config.forEach(c => {
       const meta = CONFIG_META[c.clave];

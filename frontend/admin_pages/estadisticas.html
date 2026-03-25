@@ -55,7 +55,6 @@
       border-bottom: 1px solid var(--border);
     }
 
-    /* Tabla actividad reciente */
     .actividad-tabla { width: 100%; border-collapse: collapse; font-size: .84rem; }
     .actividad-tabla th {
       text-align: left; padding: .5rem .75rem;
@@ -74,7 +73,6 @@
       font-size: .75rem; color: var(--text-400); margin-top: .4rem;
     }
 
-    /* Skeleton loader */
     .skeleton {
       background: linear-gradient(90deg, var(--bg-700) 25%, var(--bg-600) 50%, var(--bg-700) 75%);
       background-size: 200% 100%;
@@ -84,7 +82,7 @@
     @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   </style>
 </head>
-<body>
+<body data-theme-only>
 
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem">
   <div>
@@ -97,16 +95,7 @@
 <!-- Stat Cards -->
 <div class="stats-grid" id="stats-grid">
   <!-- Skeletons mientras carga -->
-  ${Array.from({length:5}, () => `
-    <div class="stat-card">
-      <div class="skeleton" style="width:44px;height:44px;border-radius:8px"></div>
-      <div class="skeleton" style="width:60%;height:2rem;margin-top:.25rem"></div>
-      <div class="skeleton" style="width:80%;height:.8rem"></div>
-    </div>
-  `).join('')}
 </div>
-
-
 
 <!-- Accesos rápidos -->
 <div>
@@ -127,29 +116,32 @@
   </div>
 </div>
 
+<script src="../js/navbar.js"></script>
 <script src="../js/app.js"></script>
 <script>
   const STAT_CONFIG = [
-    { key:'usuarios',         icon:'👥', label:'Usuarios totales',   color:'rgba(79,142,247,.15)'  },
-    { key:'reuniones',        icon:'📞', label:'Reuniones creadas',   color:'rgba(34,197,94,.15)'   },
-    { key:'reuniones_activas',icon:'🟢', label:'Reuniones activas',   color:'rgba(245,158,11,.15)'  },
-    { key:'mensajes',         icon:'💬', label:'Mensajes enviados',   color:'rgba(192,132,252,.15)' },
-    { key:'gestos',           icon:'🖐️', label:'Gestos registrados',  color:'rgba(56,217,169,.15)'  },
+    { key:'usuarios',          icon:'👥', label:'Usuarios totales',  color:'rgba(79,142,247,.15)'  },
+    { key:'reuniones',         icon:'📞', label:'Reuniones creadas',  color:'rgba(34,197,94,.15)'   },
+    { key:'reuniones_activas', icon:'🟢', label:'Reuniones activas',  color:'rgba(245,158,11,.15)'  },
+    { key:'mensajes',          icon:'💬', label:'Mensajes enviados',  color:'rgba(192,132,252,.15)' },
+    { key:'gestos',            icon:'🖐️', label:'Gestos registrados', color:'rgba(56,217,169,.15)'  },
   ];
 
-  async function cargarEstadisticas() {
-    // Mostrar skeletons
-    document.getElementById('stats-grid').innerHTML = Array.from({length:5}, () => `
+  function skeletons() {
+    return Array.from({length: 5}, () => `
       <div class="stat-card">
         <div class="skeleton" style="width:44px;height:44px;border-radius:8px"></div>
         <div class="skeleton" style="width:60%;height:2rem;margin-top:.5rem"></div>
         <div class="skeleton" style="width:80%;height:.8rem;margin-top:.25rem"></div>
       </div>`).join('');
+  }
+
+  async function cargarEstadisticas() {
+    document.getElementById('stats-grid').innerHTML = skeletons();
 
     try {
       const s = await Api.get('/admin/stats');
 
-      // Stat cards
       document.getElementById('stats-grid').innerHTML = STAT_CONFIG.map((cfg, i) => `
         <div class="stat-card" style="animation-delay:${i*60}ms">
           <div class="stat-icon" style="background:${cfg.color}">${cfg.icon}</div>
@@ -158,8 +150,6 @@
         </div>
       `).join('');
 
-      
-      // Timestamp
       document.getElementById('ultima-actualizacion').textContent =
         `Última actualización: ${new Date().toLocaleTimeString()}`;
 
@@ -169,7 +159,6 @@
     }
   }
 
-  // Formato de números grandes
   function fmt(n) {
     if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
     if (n >= 1000)    return (n/1000).toFixed(1) + 'K';
@@ -178,7 +167,6 @@
 
   cargarEstadisticas();
 
-  // Auto-refresh cada 60 segundos si la página sigue visible
   const autoRefresh = setInterval(() => {
     if (document.visibilityState === 'visible') cargarEstadisticas();
   }, 60000);

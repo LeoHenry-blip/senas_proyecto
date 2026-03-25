@@ -107,7 +107,9 @@
 
 <div class="admin-shell">
 
-  <!-- NAVBAR -->
+  <!-- NAVBAR
+       navbar.js detecta que .navbar ya existe en el DOM →
+       NO crea uno nuevo, solo engancha el #theme-toggle de aquí abajo. -->
   <nav class="navbar">
     <a href="dashboard.html" style="color:var(--text-300);font-size:.82rem;text-decoration:none">
       ← Dashboard
@@ -115,6 +117,8 @@
     <span class="navbar-brand">⚙️ Panel Admin</span>
     <div class="navbar-nav">
       <span id="nav-nombre" style="font-size:.82rem;color:var(--text-300);margin-right:.5rem"></span>
+      <!-- navbar.js engancha este botón para el toggle de tema -->
+      <button id="theme-toggle" class="btn btn-ghost btn-sm" title="Modo claro">🌙</button>
       <button class="btn btn-ghost btn-sm" onclick="Auth.logout()">Salir</button>
     </div>
   </nav>
@@ -160,6 +164,8 @@
 
 </div>
 
+<!-- navbar.js primero: engancha #theme-toggle y aplica el tema guardado -->
+<script src="js/navbar.js"></script>
 <script src="js/app.js"></script>
 <script>
   // ── Auth guard ─────────────────────────────────────────────
@@ -176,18 +182,16 @@
     const page = el.dataset.page;
     if (!page) return;
 
-    // Activo en sidebar
     document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
     el.classList.add('active');
 
-    // Mostrar spinner + cambiar iframe
     loading.classList.add('visible');
     frame.src = `admin_pages/${page}.html`;
   }
 
   frame.addEventListener('load', () => loading.classList.remove('visible'));
 
-  // ── Navegación directa por URL: admin.html?page=estadisticas
+  // ── Navegación directa por URL: admin.html?page=estadisticas ──
   (() => {
     const page = new URLSearchParams(window.location.search).get('page');
     if (page) {
@@ -203,5 +207,6 @@
     if (item) navegar(item);
   };
 </script>
+
 </body>
 </html>

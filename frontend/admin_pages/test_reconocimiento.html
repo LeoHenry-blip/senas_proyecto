@@ -106,7 +106,7 @@
     .stat-mini-value { font-size:1.4rem; font-weight:700; font-family:var(--font-mono); margin-top:.1rem; }
   </style>
 </head>
-<body>
+<body data-theme-only>
 
   <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem">
     <h2>🧪 Test de reconocimiento</h2>
@@ -146,7 +146,6 @@
     <!-- COLUMNA DERECHA: resultados -->
     <div style="display:flex; flex-direction:column; gap:1rem">
 
-      <!-- Gesto actual -->
       <div class="card card-sm">
         <h4 style="margin-bottom:.75rem">Gesto detectado</h4>
         <div class="test-letra-display" id="letra-display">—</div>
@@ -162,7 +161,6 @@
         </div>
       </div>
 
-      <!-- Top 3 candidatos -->
       <div class="card card-sm">
         <h4 style="margin-bottom:.75rem">Top 3 candidatos</h4>
         <div class="test-candidatos" id="candidatos">
@@ -170,7 +168,6 @@
         </div>
       </div>
 
-      <!-- Historial -->
       <div class="card card-sm">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.6rem">
           <h4>Historial de detecciones</h4>
@@ -179,7 +176,6 @@
         <div class="test-historial" id="historial"></div>
       </div>
 
-      <!-- Stats de sesión -->
       <div class="card card-sm">
         <h4 style="margin-bottom:.75rem">Estadísticas de sesión</h4>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6rem">
@@ -205,9 +201,9 @@
     </div>
   </div>
 
+<script src="../js/navbar.js"></script>
 <script src="../js/app.js"></script>
 <script>
-  // ── Estado ────────────────────────────────────────────────
   let stream        = null;
   let frameTimer    = null;
   let fpsTimer      = null;
@@ -222,7 +218,6 @@
   const canvas = document.getElementById('test-canvas');
   const ctx    = canvas.getContext('2d');
 
-  // ── Log ──────────────────────────────────────────────────
   function log(msg, tipo = 'info') {
     const el   = document.getElementById('test-log');
     const line = document.createElement('div');
@@ -233,7 +228,6 @@
     while (el.children.length > 60) el.removeChild(el.firstChild);
   }
 
-  // ── Carga de gestos ──────────────────────────────────────
   async function cargarGestos() {
     try {
       const { gestos } = await Api.get('/admin/gestos');
@@ -245,7 +239,6 @@
     }
   }
 
-  // ── Cámara ───────────────────────────────────────────────
   async function iniciarCamara() {
     if (stream) return;
     try {
@@ -287,7 +280,6 @@
     b.classList.toggle('activo', activo);
   }
 
-  // ── Captura y envío ──────────────────────────────────────
   async function capturarYEnviar() {
     if (!video.videoWidth) return;
     fpsCount++;
@@ -324,7 +316,6 @@
     }
   }
 
-  // ── Comparación de gestos ────────────────────────────────
   function buscarGesto(landmarks) {
     if (!gestosDB?.length) { cargarGestos(); return; }
 
@@ -347,7 +338,6 @@
     actualizarUI(mejor.nombre, confianza, resultados.slice(0, 3), umbral);
   }
 
-  // ── UI ───────────────────────────────────────────────────
   function actualizarUI(nombre, confianza, top3, umbral) {
     const pct = Math.round(confianza * 100);
 
@@ -406,12 +396,9 @@
     log('Sesión limpiada', 'warn');
   }
 
-  // ── Limpiar cámara al salir de la página ─────────────────
   window.addEventListener('beforeunload', detenerCamara);
-  // También cuando el iframe padre carga otra página:
   window.addEventListener('pagehide', detenerCamara);
 
-  // ── Auto-cargar gestos al abrir ──────────────────────────
   cargarGestos();
 </script>
 </body>
