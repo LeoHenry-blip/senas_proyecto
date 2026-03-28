@@ -1,5 +1,5 @@
 """
-reconocedor.py  v3.0
+reconocedor.py  v3.1
 ====================
 Motor de reconocimiento con soporte hibrido:
 
@@ -16,6 +16,9 @@ Convivencia letras/palabras:
   El sistema detecta letras y palabras en paralelo.
   Si DTW da una palabra con confianza > umbral, la palabra gana.
   Si no, se sigue acumulando letras normalmente.
+
+Cambios v3.1:
+  - Fix: _dtw_inicio_t se resetea correctamente al limpiar la ventana
 """
 
 import time
@@ -68,8 +71,6 @@ class Reconocedor:
         self.frase_para_corregir: str  = ""
 
         # ── VENTANA DESLIZANTE PARA DTW ──────────────────────────────────
-        # Acumula los ultimos N frames de landmarks normalizados
-        # Se usa para detectar palabras con movimiento
         self.frames_dtw_max   = 30    # Maximo frames a acumular
         self.frames_dtw_min   = 8     # Minimo frames para evaluar DTW
         self.ventana_dtw: deque = deque(maxlen=self.frames_dtw_max)
@@ -84,7 +85,7 @@ class Reconocedor:
         self._ultima_palabra_dtw: Optional[str] = None
         self._dtw_palabra_tiempo  = 0.0
 
-        print("[Reconocedor] Sistema inicializado (v3.0 con DTW)")
+        print("[Reconocedor] Sistema inicializado (v3.1 con DTW)")
 
     # =========================================================================
     # PROCESAMIENTO DE LANDMARKS (llamado en cada frame)
@@ -102,17 +103,19 @@ class Reconocedor:
             (nombre_letra, confianza) — solo letras, las palabras se manejan
             internamente via ventana DTW
         """
-        # Normalizar el vector actual
         vector = self.db.extraer_vector_mano(landmarks)
         if vector is None:
             return None, 0.0
 
-        # Agregar frame a la ventana DTW (siempre, mientras haya mano)
-        self.ventana_dtw.append(vector)
+        # Agregar frame a la ventana DTW
+        # FIX v3.1: _dtw_inicio_t se asigna solo cuando la ventana estaba vacía
+        # (no cuando ya está activa), evitando que quede congelado indefinidamente
+        if not self._dtw_activo:
+            self._dtw_inicio_t = time.time()
         self._dtw_activo = True
-        self._dtw_inicio_t = self._dtw_inicio_t or time.time()
+        self.ventana_dtw.append(vector)
 
-        # Buscar la letra mas parecida (para el flujo normal)
+        # Buscar la letra mas parecida
         nombre, confianza = self.db.buscar_gesto(vector)
 
         # Agregar al buffer de suavizado de letras
@@ -132,7 +135,7 @@ class Reconocedor:
         if not conteo:
             return None, 0.0
 
-        gesto_suavizado   = max(conteo, key=conteo.get)
+        gesto_suavizado    = max(conteo, key=conteo.get)
         confianza_promedio = suma_confianza[gesto_suavizado] / conteo[gesto_suavizado]
 
         votos_minimos = max(3, self.buffer_tamano * 0.4)
@@ -150,10 +153,6 @@ class Reconocedor:
         """
         Actualiza el estado cuando hay mano visible.
         Evalua DTW periodicamente si hay suficientes frames acumulados.
-
-        Args:
-            nombre_gesto: Resultado del reconocimiento de letra (puede ser None)
-            confianza:    Confianza del gesto estatico
 
         Returns:
             True si se agrego algo al texto
@@ -182,7 +181,7 @@ class Reconocedor:
             self.gesto_confirmado    = False
             return False
 
-        tiempo_sosteniendo = ahora - self.gesto_inicio_tiempo
+        tiempo_sosteniendo  = ahora - self.gesto_inicio_tiempo
         tiempo_desde_ultima = ahora - self.ultima_letra_tiempo
 
         if (tiempo_sosteniendo  >= self.tiempo_confirmacion and
@@ -205,15 +204,11 @@ class Reconocedor:
         Evalua la ventana DTW actual contra todas las palabras entrenadas.
         Si encuentra una coincidencia con suficiente confianza, agrega
         la palabra a la frase y limpia la ventana.
-
-        Se llama periodicamente mientras hay mano y movimiento.
         """
         if not self.db.palabras:
             return
 
-        # Convertir ventana a array (N, 63)
         secuencia = np.stack(list(self.ventana_dtw), axis=0)
-
         nombre, confianza = self.db.buscar_palabra_dtw(secuencia)
 
         if nombre is None or confianza < 0.55:
@@ -226,52 +221,48 @@ class Reconocedor:
                 ahora - self._dtw_palabra_tiempo < 2.0):
             return
 
-        # Agregar la palabra a la frase
         print(f"[Reconocedor] Palabra DTW reconocida: '{nombre}' "
               f"(confianza={confianza:.2f})")
 
         self._agregar_palabra_directa(nombre)
 
-        # Registrar la palabra y limpiar la ventana
         self._ultima_palabra_dtw = nombre
         self._dtw_palabra_tiempo = ahora
         self.ventana_dtw.clear()
-        self._dtw_activo = False
+        self._dtw_activo   = False
+        self._dtw_inicio_t = 0.0   # FIX v3.1: resetear al limpiar la ventana
 
     # =========================================================================
-    # ACTUALIZAR SIN MANO (llamado cuando no hay mano en el frame)
+    # ACTUALIZAR SIN MANO
     # =========================================================================
 
     def actualizar_sin_mano(self) -> None:
         """
         Llama cuando no hay mano visible.
         Maneja pausas para separar letras y palabras.
-        Tambien evalua DTW final cuando termina el movimiento.
+        Evalua DTW final cuando termina el movimiento.
         """
         ahora = time.time()
         tiempo_sin_mano = ahora - self.ultimo_gesto_tiempo
 
-        # Limpiar buffer de letras
         self.buffer_gestos.clear()
         self.letra_actual    = ""
         self.confianza_actual = 0.0
 
-        # ── Evaluar DTW al terminar el movimiento ─────────────────────────
-        # Cuando la mano desaparece y hay frames acumulados, hacer una
-        # evaluacion final de la secuencia completa
+        # Evaluar DTW al terminar el movimiento (pausa breve = fin del gesto)
         if (self._dtw_activo and
                 len(self.ventana_dtw) >= self.frames_dtw_min and
-                tiempo_sin_mano >= 0.3):   # Pequeña pausa = fin del movimiento
+                tiempo_sin_mano >= 0.3):
             self._evaluar_dtw()
             self._dtw_activo = False
 
         # Limpiar ventana DTW si pasa mucho tiempo sin mano
         if tiempo_sin_mano >= 1.5:
             self.ventana_dtw.clear()
-            self._dtw_activo      = False
-            self._dtw_inicio_t    = 0.0
+            self._dtw_activo   = False
+            self._dtw_inicio_t = 0.0   # FIX v3.1: resetear correctamente
 
-        # ── Pausa para finalizar palabra ──────────────────────────────────
+        # Pausa para finalizar palabra
         if tiempo_sin_mano >= self.tiempo_pausa_palabra:
             if self.palabra_actual:
                 if self.frase_completa:
@@ -296,10 +287,8 @@ class Reconocedor:
         tipo = self.db.gestos.get(nombre, {}).get("tipo", "letter")
 
         if tipo == "word":
-            # Palabra estatica (sin movimiento)
             self._agregar_palabra_directa(nombre)
         else:
-            # Letra
             self.palabra_actual += nombre
             print(f"[Reconocedor] Letra: '{nombre}' → "
                   f"Palabra: '{self.palabra_actual}'")
@@ -309,7 +298,6 @@ class Reconocedor:
         Agrega una palabra completa a la frase.
         Primero cierra cualquier letra en formacion.
         """
-        # Cerrar letra en formacion si existe
         if self.palabra_actual:
             if self.frase_completa:
                 self.frase_completa += " " + self.palabra_actual
@@ -317,7 +305,6 @@ class Reconocedor:
                 self.frase_completa = self.palabra_actual
             self.palabra_actual = ""
 
-        # Agregar la palabra
         if self.frase_completa:
             self.frase_completa += " " + nombre
         else:
@@ -333,32 +320,31 @@ class Reconocedor:
     def obtener_estado(self) -> dict:
         """Estado actual para mostrar en la UI."""
         return {
-            "letra_actual":    self.letra_actual,
-            "palabra_actual":  self.palabra_actual,
-            "frase_completa":  self.frase_completa,
-            "confianza":       self.confianza_actual,
-            "pausa_detectada": self.pausa_detectada,
-            "frase_para_corregir": self.frase_para_corregir,
-            # Info extra del DTW para debug
+            "letra_actual":          self.letra_actual,
+            "palabra_actual":        self.palabra_actual,
+            "frase_completa":        self.frase_completa,
+            "confianza":             self.confianza_actual,
+            "pausa_detectada":       self.pausa_detectada,
+            "frase_para_corregir":   self.frase_para_corregir,
             "frames_dtw_acumulados": len(self.ventana_dtw),
-            "dtw_activo":      self._dtw_activo,
+            "dtw_activo":            self._dtw_activo,
         }
 
     def limpiar_todo(self) -> None:
         """Reinicia todo el estado."""
-        self.letra_actual    = ""
-        self.palabra_actual  = ""
-        self.frase_completa  = ""
-        self.confianza_actual = 0.0
+        self.letra_actual        = ""
+        self.palabra_actual      = ""
+        self.frase_completa      = ""
+        self.confianza_actual    = 0.0
         self.ultimo_gesto_nombre = None
         self.gesto_confirmado    = False
         self.pausa_detectada     = False
         self.frase_para_corregir = ""
         self.buffer_gestos.clear()
         self.ventana_dtw.clear()
-        self._dtw_activo      = False
-        self._dtw_inicio_t    = 0.0
-        self._ultima_palabra_dtw = None
+        self._dtw_activo          = False
+        self._dtw_inicio_t        = 0.0
+        self._ultima_palabra_dtw  = None
         print("[Reconocedor] Estado limpiado")
 
     def consumir_pausa(self) -> Optional[str]:

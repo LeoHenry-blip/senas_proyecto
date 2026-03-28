@@ -4,6 +4,7 @@ db/database.py
 Conexión y gestión de la base de datos MySQL.
 Usa PyMySQL como driver y un pool de conexiones simple.
 Crea todas las tablas automáticamente si no existen.
+v3.0 — soporte para secuencias DTW (palabras con movimiento)
 """
 
 import pymysql                         # Driver MySQL puro Python
@@ -49,11 +50,9 @@ class DatabaseManager:
         """
         Retorna la conexión activa o crea una nueva si se cerró.
         """
-        # Verificar si la conexión existe y está activa
         if self._connection is None or not self._connection.open:
             self._connection = pymysql.connect(**DB_CONFIG)
         try:
-            # ping() reconecta automáticamente si se perdió la conexión
             self._connection.ping(reconnect=True)
         except Exception:
             self._connection = pymysql.connect(**DB_CONFIG)
@@ -63,11 +62,6 @@ class DatabaseManager:
     def cursor(self):
         """
         Context manager que provee un cursor y maneja commit/rollback.
-
-        Uso:
-            with db.cursor() as cur:
-                cur.execute("SELECT ...")
-                rows = cur.fetchall()
         """
         conn = self._get_connection()
         cur = conn.cursor()
@@ -81,16 +75,7 @@ class DatabaseManager:
             cur.close()
 
     def execute(self, sql: str, params=None) -> int:
-        """
-        Ejecuta un comando SQL y retorna el número de filas afectadas.
-
-        Args:
-            sql: Sentencia SQL con placeholders %s
-            params: Tupla o lista de parámetros
-
-        Returns:
-            Número de filas afectadas
-        """
+        """Ejecuta un comando SQL y retorna el número de filas afectadas."""
         with self.cursor() as cur:
             cur.execute(sql, params or ())
             return cur.rowcount
@@ -108,9 +93,7 @@ class DatabaseManager:
             return cur.fetchall()
 
     def insert(self, sql: str, params=None) -> int:
-        """
-        Ejecuta INSERT y retorna el ID del registro insertado (lastrowid).
-        """
+        """Ejecuta INSERT y retorna el ID del registro insertado (lastrowid)."""
         with self.cursor() as cur:
             cur.execute(sql, params or ())
             return cur.lastrowid
@@ -154,17 +137,16 @@ def crear_base_datos_si_no_existe():
 SQL_CREAR_TABLAS = """
 -- ============================================================
 -- TABLA: usuarios
--- Almacena los usuarios registrados en el sistema
 -- ============================================================
 CREATE TABLE IF NOT EXISTS usuarios (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     nombre        VARCHAR(100)        NOT NULL,
     email         VARCHAR(150)        NOT NULL UNIQUE,
-    password_hash VARCHAR(256)        NOT NULL,          -- bcrypt hash
+    password_hash VARCHAR(256)        NOT NULL,
     rol           ENUM('usuario','admin') DEFAULT 'usuario',
-    avatar_url    VARCHAR(500)        DEFAULT NULL,      -- URL del avatar
-    activo        TINYINT(1)          DEFAULT 1,         -- 0 = baneado
-    google_id     VARCHAR(150)        DEFAULT NULL,      -- OAuth Google
+    avatar_url    VARCHAR(500)        DEFAULT NULL,
+    activo        TINYINT(1)          DEFAULT 1,
+    google_id     VARCHAR(150)        DEFAULT NULL,
     creado_en     DATETIME            DEFAULT CURRENT_TIMESTAMP,
     ultimo_login  DATETIME            DEFAULT NULL,
     INDEX idx_email (email),
@@ -173,11 +155,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 -- ============================================================
 -- TABLA: reuniones
--- Cada sala de videollamada / chat
 -- ============================================================
 CREATE TABLE IF NOT EXISTS reuniones (
     id            INT AUTO_INCREMENT PRIMARY KEY,
-    codigo        VARCHAR(12)         NOT NULL UNIQUE,   -- ej: ABC-123-XYZ
+    codigo        VARCHAR(12)         NOT NULL UNIQUE,
     nombre        VARCHAR(200)        DEFAULT NULL,
     creador_id    INT                 NOT NULL,
     activa        TINYINT(1)          DEFAULT 1,
@@ -190,7 +171,6 @@ CREATE TABLE IF NOT EXISTS reuniones (
 
 -- ============================================================
 -- TABLA: reunion_participantes
--- Quién está (o estuvo) en cada reunión
 -- ============================================================
 CREATE TABLE IF NOT EXISTS reunion_participantes (
     id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -205,16 +185,15 @@ CREATE TABLE IF NOT EXISTS reunion_participantes (
 
 -- ============================================================
 -- TABLA: mensajes
--- Historial de mensajes de cada reunión
 -- ============================================================
 CREATE TABLE IF NOT EXISTS mensajes (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     reunion_id      INT                 NOT NULL,
     usuario_id      INT                 NOT NULL,
-    texto_original  TEXT                NOT NULL,        -- Lo que detectó el sistema
-    texto_corregido TEXT                DEFAULT NULL,    -- Después de corrección IA
+    texto_original  TEXT                NOT NULL,
+    texto_corregido TEXT                DEFAULT NULL,
     tipo            ENUM('senas','texto','sistema') DEFAULT 'senas',
-    confianza       FLOAT               DEFAULT NULL,   -- 0-1
+    confianza       FLOAT               DEFAULT NULL,
     enviado_en      DATETIME            DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (reunion_id) REFERENCES reuniones(id) ON DELETE CASCADE,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
@@ -223,16 +202,17 @@ CREATE TABLE IF NOT EXISTS mensajes (
 
 -- ============================================================
 -- TABLA: gestos
--- Base de datos de gestos del reconocedor (sincronizada con gestos.json)
+-- v3.0: agrega secuencia_json para palabras con movimiento (DTW)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS gestos (
     id              INT AUTO_INCREMENT PRIMARY KEY,
-    nombre          VARCHAR(50)         NOT NULL UNIQUE,  -- "A", "HOLA", etc.
+    nombre          VARCHAR(50)         NOT NULL UNIQUE,
     tipo            ENUM('letter','word','custom') DEFAULT 'letter',
     descripcion     VARCHAR(300)        DEFAULT NULL,
-    landmarks_json  MEDIUMTEXT          NOT NULL,        -- Array JSON de 63 floats
+    landmarks_json  MEDIUMTEXT          NOT NULL,
+    secuencia_json  LONGTEXT            DEFAULT NULL,
     muestras_usadas INT                 DEFAULT 1,
-    creado_por      INT                 DEFAULT NULL,    -- usuario admin que lo entrenó
+    creado_por      INT                 DEFAULT NULL,
     creado_en       DATETIME            DEFAULT CURRENT_TIMESTAMP,
     actualizado_en  DATETIME            DEFAULT CURRENT_TIMESTAMP
                                         ON UPDATE CURRENT_TIMESTAMP,
@@ -243,7 +223,6 @@ CREATE TABLE IF NOT EXISTS gestos (
 
 -- ============================================================
 -- TABLA: configuracion
--- Parámetros del reconocedor ajustables desde el panel admin
 -- ============================================================
 CREATE TABLE IF NOT EXISTS configuracion (
     clave   VARCHAR(100) PRIMARY KEY,
@@ -255,7 +234,6 @@ CREATE TABLE IF NOT EXISTS configuracion (
 
 -- ============================================================
 -- TABLA: sesiones
--- Tokens JWT activos (para invalidación manual)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS sesiones (
     id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -282,6 +260,22 @@ CONFIG_DEFAULT = [
 ]
 
 
+def migrar_agregar_secuencia_json():
+    """
+    Migración segura: agrega columna secuencia_json si no existe.
+    Se llama automáticamente en inicializar_db().
+    Es idempotente — si ya existe la columna, no hace nada.
+    """
+    try:
+        db.execute(
+            "ALTER TABLE gestos ADD COLUMN secuencia_json LONGTEXT DEFAULT NULL"
+        )
+        print("[DB] Migración: columna secuencia_json agregada")
+    except Exception:
+        # MySQL lanza error si la columna ya existe — es esperado, ignorar
+        pass
+
+
 def inicializar_db():
     """
     Punto de entrada principal: crea la DB, las tablas y los datos por defecto.
@@ -293,14 +287,12 @@ def inicializar_db():
     crear_base_datos_si_no_existe()
 
     # 2. Crear todas las tablas
-    # Dividir el bloque SQL en sentencias individuales y ejecutar cada una
     sentencias = [s.strip() for s in SQL_CREAR_TABLAS.split(";") if s.strip()]
     for sql in sentencias:
         if sql:
             try:
                 db.execute(sql)
             except Exception as e:
-                # Ignorar errores de "ya existe" (IF NOT EXISTS los previene)
                 print(f"[DB] Aviso al crear tabla: {e}")
 
     print("[DB] Tablas creadas/verificadas")
@@ -313,6 +305,10 @@ def inicializar_db():
         )
 
     print("[DB] Configuración por defecto lista")
+
+    # 4. Migraciones seguras (idempotentes — seguro correr en cada arranque)
+    migrar_agregar_secuencia_json()
+
     print("[DB] ✅ Base de datos lista para usar")
 
 
@@ -321,16 +317,7 @@ def inicializar_db():
 # =============================================================================
 
 def get_config(clave: str, default: str = "") -> str:
-    """
-    Obtiene un valor de configuración desde la tabla configuracion.
-
-    Args:
-        clave: Nombre de la configuración
-        default: Valor por defecto si no existe
-
-    Returns:
-        Valor como string
-    """
+    """Obtiene un valor de configuración desde la tabla configuracion."""
     row = db.fetchone("SELECT valor FROM configuracion WHERE clave = %s", (clave,))
     return row["valor"] if row else default
 
@@ -346,14 +333,9 @@ def set_config(clave: str, valor: str) -> None:
 
 def sincronizar_gestos_desde_json(ruta_json: str = "gestos.json") -> int:
     """
-    Importa gestos desde el archivo gestos.json a la tabla MySQL.
-    No sobreescribe gestos ya existentes en MySQL.
-
-    Args:
-        ruta_json: Ruta al archivo JSON de gestos
-
-    Returns:
-        Número de gestos importados
+    Importa gestos desde gestos.json a MySQL.
+    No sobreescribe gestos ya existentes.
+    Respeta secuencias DTW para palabras (campo 'secuencia').
     """
     import os
     if not os.path.exists(ruta_json):
@@ -368,16 +350,23 @@ def sincronizar_gestos_desde_json(ruta_json: str = "gestos.json") -> int:
 
     for nombre, info in gestures.items():
         landmarks_json = json.dumps(info.get("landmarks", []))
+
+        # Para palabras con movimiento, conservar la secuencia DTW
+        secuencia_json = None
+        if info.get("type") == "word" and info.get("secuencia"):
+            secuencia_json = json.dumps(info["secuencia"])
+
         try:
             db.execute(
                 """INSERT IGNORE INTO gestos
-                   (nombre, tipo, descripcion, landmarks_json, muestras_usadas)
-                   VALUES (%s, %s, %s, %s, %s)""",
+                   (nombre, tipo, descripcion, landmarks_json, secuencia_json, muestras_usadas)
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
                 (
                     nombre,
                     info.get("type", "letter"),
                     info.get("description", ""),
                     landmarks_json,
+                    secuencia_json,
                     info.get("muestras_usadas", 1)
                 )
             )
@@ -391,36 +380,50 @@ def sincronizar_gestos_desde_json(ruta_json: str = "gestos.json") -> int:
 
 def exportar_gestos_a_json(ruta_json: str = "gestos.json") -> bool:
     """
-    Exporta todos los gestos de MySQL al archivo gestos.json.
-    Útil para hacer backup o para que el reconocedor local los use.
+    Exporta todos los gestos de MySQL al archivo gestos.json v3.0.
+    - Letras:   campo 'landmarks' (63 floats)
+    - Palabras: campo 'secuencia' ([reps][frames][63f]) + 'landmarks' (primer frame)
+    El JSON resultante es la fuente de verdad para el reconocedor
+    y para sincronizar entre miembros del equipo vía Git.
     """
     rows = db.fetchall("SELECT * FROM gestos ORDER BY nombre")
 
     gestures = {}
     for row in rows:
         landmarks = json.loads(row["landmarks_json"])
-        gestures[row["nombre"]] = {
-            "name":           row["nombre"],
-            "type":           row["tipo"],
-            "description":    row["descripcion"] or "",
-            "landmarks":      landmarks,
+        entry = {
+            "name":            row["nombre"],
+            "type":            row["tipo"],
+            "description":     row["descripcion"] or "",
+            "landmarks":       landmarks,
             "muestras_usadas": row["muestras_usadas"],
         }
 
+        # Si es palabra con movimiento, incluir la secuencia DTW completa
+        if row["tipo"] == "word" and row.get("secuencia_json"):
+            entry["secuencia"] = json.loads(row["secuencia_json"])
+
+        gestures[row["nombre"]] = entry
+
+    total_letras   = sum(1 for r in rows if r["tipo"] != "word")
+    total_palabras = sum(1 for r in rows if r["tipo"] == "word")
+
     data = {
-        "version":     "2.0",
-        "description": "Base de datos exportada desde MySQL - Señas V2",
+        "version":     "3.0",
+        "description": "Base de datos Señas V2 — con DTW para palabras",
         "gestures":    gestures,
         "metadata": {
             "total_gestures": len(gestures),
-            "exported_at":    datetime.now().isoformat()
+            "total_letras":   total_letras,
+            "total_palabras": total_palabras,
+            "exported_at":    datetime.now().isoformat(),
         }
     }
 
     try:
         with open(ruta_json, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        print(f"[DB] Gestos exportados a {ruta_json}: {len(gestures)}")
+        print(f"[DB] Exportado → {ruta_json}: {total_letras} letras, {total_palabras} palabras")
         return True
     except Exception as e:
         print(f"[DB] Error exportando: {e}")

@@ -60,7 +60,7 @@
     const nav = document.createElement('nav');
     nav.className = 'navbar';
     nav.innerHTML = `
-      <span class="navbar-brand">🤟 Señas V2</span>
+      <span class="navbar-brand"> Sistema Taductor de señas</span>
       <div class="navbar-nav">
         <span id="nav-nombre" class="text-muted text-sm"></span>
         <span id="nav-badge-admin"></span>

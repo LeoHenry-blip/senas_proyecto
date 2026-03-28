@@ -8,127 +8,177 @@
   <link rel="stylesheet" href="../css/main.css">
   <style>
     body {
-      background: var(--bg-900);
-      color: var(--text-100);
-      min-height: 100vh;
-      padding: 1.75rem 2rem;
-      overflow-y: auto;
+      background: var(--bg-900); color: var(--text-100);
+      min-height: 100vh; padding: 1.75rem 2rem; overflow-y: auto;
     }
 
+    /* ── Layout ─────────────────────────────────────────────────── */
     .test-layout {
       display: grid;
-      grid-template-columns: 480px 1fr;
+      grid-template-columns: 460px 1fr;
       gap: 1.5rem;
     }
 
+    /* ── Cámara ──────────────────────────────────────────────────── */
     .test-camara-wrap {
-      position: relative;
-      background: #000;
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      aspect-ratio: 4/3;
-      border: 2px solid var(--border);
+      position: relative; background: #000;
+      border-radius: var(--radius-lg); overflow: hidden;
+      aspect-ratio: 4/3; border: 2px solid var(--border);
+      transition: border-color .3s;
     }
-    .test-camara-wrap video  { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
-    .test-camara-wrap canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+    .test-camara-wrap.grabando { border-color: var(--danger); }
+    .test-camara-wrap.lista    { border-color: var(--success); }
+    .test-camara-wrap video    { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+    .test-camara-wrap canvas   { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
 
-    .test-letra-display {
-      font-size: 6rem; font-weight: 900; line-height: 1;
-      color: var(--accent); text-align: center;
-      text-shadow: 0 0 40px rgba(79,142,247,.35);
-      min-height: 6rem;
-      font-family: var(--font-mono);
+    /* Indicador REC */
+    .rec-badge {
+      position: absolute; top:10px; right:10px;
+      background: var(--danger); color:#fff;
+      padding: .25rem .6rem; border-radius:20px;
+      font-size:.75rem; font-weight:700;
+      display:none; align-items:center; gap:.3rem;
     }
+    .rec-badge.visible { display:flex; }
+    @keyframes parpadeo { 0%,100%{opacity:1} 50%{opacity:.25} }
+    .rec-dot { width:8px; height:8px; border-radius:50%; background:#fff; animation:parpadeo .8s infinite; }
 
-    .test-conf-label {
-      display: flex; justify-content: space-between;
-      font-size: .8rem; color: var(--text-300); margin-bottom: .4rem;
+    /* ── Tabs ────────────────────────────────────────────────────── */
+    .modo-tabs {
+      display:flex; gap:.4rem; margin-bottom:1rem;
     }
+    .modo-tab {
+      flex:1; padding:.5rem; text-align:center; cursor:pointer;
+      border-radius:var(--radius-md); border:2px solid var(--border);
+      font-weight:600; font-size:.85rem; transition:all .2s;
+      background:var(--bg-700); color:var(--text-300);
+    }
+    .modo-tab.active { border-color:var(--accent); color:var(--accent); background:rgba(79,142,247,.12); }
 
-    .test-candidatos { display: flex; flex-direction: column; gap: .4rem; }
-    .test-cand-item {
-      display: flex; align-items: center; gap: .75rem;
-      padding: .45rem .75rem;
-      background: var(--bg-700);
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-    }
-    .test-cand-nombre { font-family: var(--font-mono); font-weight: 700; font-size: 1rem; min-width: 44px; }
-    .test-cand-bar-wrap { flex:1; background:var(--bg-900); border-radius:999px; height:8px; overflow:hidden; }
-    .test-cand-bar { height:100%; border-radius:999px; transition:width .2s ease; }
-    .test-cand-pct { font-size:.78rem; color:var(--text-300); min-width:38px; text-align:right; }
+    .panel-modo          { display:none; flex-direction:column; gap:1rem; }
+    .panel-modo.activo   { display:flex; }
 
-    .test-historial { display:flex; flex-wrap:wrap; gap:.3rem; min-height:36px; }
-    .test-hist-chip {
-      background: var(--bg-700); border: 1px solid var(--border);
-      border-radius: 6px; padding: .2rem .55rem;
-      font-family: var(--font-mono); font-size: .85rem; color: var(--text-200);
-      animation: popIn .15s ease;
+    /* ── Display principal ───────────────────────────────────────── */
+    .resultado-display {
+      font-size:5.5rem; font-weight:900; line-height:1;
+      text-align:center; min-height:5.5rem;
+      font-family:var(--font-mono);
+      transition: color .2s;
     }
+    .resultado-display.letra  { color: var(--accent); text-shadow:0 0 40px rgba(79,142,247,.35); }
+    .resultado-display.exito  { color: var(--success); text-shadow:0 0 40px rgba(34,197,94,.35); }
+    .resultado-display.fallo  { color: var(--danger);  text-shadow:0 0 40px rgba(239,68,68,.2); }
+    .resultado-display.espera { color: var(--text-400); }
+
+    /* ── Barra de confianza ──────────────────────────────────────── */
+    .conf-label { display:flex; justify-content:space-between; font-size:.8rem; color:var(--text-300); margin-bottom:.4rem; }
+
+    /* ── Candidatos top3 ────────────────────────────────────────── */
+    .candidatos-list { display:flex; flex-direction:column; gap:.4rem; }
+    .cand-item {
+      display:flex; align-items:center; gap:.75rem;
+      padding:.45rem .75rem; background:var(--bg-700);
+      border-radius:var(--radius-sm); border:1px solid var(--border);
+    }
+    .cand-nombre { font-family:var(--font-mono); font-weight:700; font-size:1rem; min-width:80px; }
+    .cand-bar-wrap { flex:1; background:var(--bg-900); border-radius:999px; height:8px; overflow:hidden; }
+    .cand-bar { height:100%; border-radius:999px; transition:width .25s ease; }
+    .cand-pct { font-size:.78rem; color:var(--text-300); min-width:40px; text-align:right; }
+    .cand-dist { font-size:.7rem; color:var(--text-400); min-width:52px; text-align:right; font-family:var(--font-mono); }
+
+    /* ── Historial ───────────────────────────────────────────────── */
+    .historial-wrap { display:flex; flex-wrap:wrap; gap:.3rem; min-height:36px; }
+    .hist-chip {
+      background:var(--bg-700); border:1px solid var(--border);
+      border-radius:6px; padding:.2rem .55rem;
+      font-family:var(--font-mono); font-size:.85rem; color:var(--text-200);
+      animation:popIn .15s ease;
+    }
+    .hist-chip.word { background:rgba(79,142,247,.15); border-color:rgba(79,142,247,.3); color:var(--accent); }
     @keyframes popIn { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
 
-    .test-mano-indicator {
-      text-align: center; font-size: .82rem;
-      color: var(--text-300); margin-top: .4rem;
-      transition: color .3s;
+    /* ── Indicadores de frames ───────────────────────────────────── */
+    .frames-barra {
+      display:flex; gap:3px; flex-wrap:wrap; margin:.4rem 0;
     }
-    .test-mano-indicator.detectada { color: var(--success); }
+    .frame-dot {
+      width:9px; height:9px; border-radius:50%;
+      background:var(--bg-500); transition:background .1s;
+    }
+    .frame-dot.lleno { background:var(--accent); }
+    .frame-dot.min   { background:var(--success); }
 
-    .test-estado-badge {
-      display: inline-flex; align-items: center; gap: .4rem;
-      padding: .3rem .75rem; border-radius: 999px;
-      font-size: .78rem; font-weight: 600;
-      background: rgba(239,68,68,.12); color: var(--danger);
-      border: 1px solid rgba(239,68,68,.25);
+    /* ── Estado y badges ─────────────────────────────────────────── */
+    .estado-badge {
+      display:inline-flex; align-items:center; gap:.4rem;
+      padding:.3rem .75rem; border-radius:999px;
+      font-size:.78rem; font-weight:600;
+      background:rgba(239,68,68,.12); color:var(--danger);
+      border:1px solid rgba(239,68,68,.25);
     }
-    .test-estado-badge.activo {
-      background: rgba(34,197,94,.12); color: var(--success);
-      border-color: rgba(34,197,94,.25);
-    }
-    .test-dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+    .estado-badge.activo { background:rgba(34,197,94,.12); color:var(--success); border-color:rgba(34,197,94,.25); }
+    .estado-dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
 
+    .mano-indicator { text-align:center; font-size:.82rem; color:var(--text-300); margin-top:.4rem; transition:color .3s; }
+    .mano-indicator.detectada { color:var(--success); }
+
+    /* ── Log ─────────────────────────────────────────────────────── */
     .test-log {
-      background: var(--bg-900); border-radius: var(--radius-md);
-      padding: .75rem; font-family: var(--font-mono);
-      font-size: .73rem; color: var(--text-300);
-      height: 110px; overflow-y: auto;
-      border: 1px solid var(--border);
+      background:var(--bg-900); border-radius:var(--radius-md);
+      padding:.75rem; font-family:var(--font-mono);
+      font-size:.73rem; color:var(--text-300);
+      height:100px; overflow-y:auto;
+      border:1px solid var(--border);
     }
-    .test-log .log-ok   { color: var(--success); }
-    .test-log .log-warn { color: #f59e0b; }
-    .test-log .log-err  { color: var(--danger); }
+    .log-ok   { color:var(--success); }
+    .log-warn { color:#f59e0b; }
+    .log-err  { color:var(--danger); }
 
-    .stat-mini {
-      background: var(--bg-700); border: 1px solid var(--border);
-      border-radius: var(--radius-md); padding: .6rem .75rem;
-    }
+    /* ── Stats ───────────────────────────────────────────────────── */
+    .stat-mini { background:var(--bg-700); border:1px solid var(--border); border-radius:var(--radius-md); padding:.6rem .75rem; }
     .stat-mini-label { font-size:.72rem; color:var(--text-300); text-transform:uppercase; letter-spacing:.05em; }
     .stat-mini-value { font-size:1.4rem; font-weight:700; font-family:var(--font-mono); margin-top:.1rem; }
+
+    /* ── Umbral info ─────────────────────────────────────────────── */
+    .umbral-info {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.45rem .75rem; background:var(--bg-700);
+      border:1px solid var(--border); border-radius:var(--radius-sm);
+      font-size:.78rem; color:var(--text-300);
+    }
+    .umbral-valor { font-family:var(--font-mono); font-weight:700; color:var(--accent); }
   </style>
 </head>
 <body data-theme-only>
 
-  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
     <h2>🧪 Test de reconocimiento</h2>
-    <div style="display:flex; align-items:center; gap:.75rem">
-      <span class="test-estado-badge" id="test-estado-badge">
-        <span class="test-dot"></span> Cámara apagada
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <span class="estado-badge" id="badge-camara">
+        <span class="estado-dot"></span> Cámara apagada
       </span>
-      <span style="font-size:.78rem; color:var(--text-300); font-family:var(--font-mono)" id="fps-display"></span>
+      <span style="font-size:.78rem;color:var(--text-300);font-family:var(--font-mono)" id="fps-display"></span>
     </div>
+  </div>
+
+  <!-- Tabs de modo -->
+  <div class="modo-tabs">
+    <div class="modo-tab active" id="tab-letra"   onclick="cambiarModo('letra')">✋ Letras estáticas</div>
+    <div class="modo-tab"        id="tab-palabra" onclick="cambiarModo('palabra')">🤟 Palabras con movimiento (DTW)</div>
   </div>
 
   <div class="test-layout">
 
-    <!-- COLUMNA IZQUIERDA: cámara -->
+    <!-- ── CÁMARA (compartida entre modos) ────────────────────────── -->
     <div>
-      <div class="test-camara-wrap">
+      <div class="test-camara-wrap" id="camara-wrap">
         <video id="test-video" autoplay muted playsinline></video>
         <canvas id="test-canvas"></canvas>
+        <div class="rec-badge" id="rec-badge"><div class="rec-dot"></div> REC</div>
       </div>
-      <div class="test-mano-indicator" id="test-mano-indicator">Sin mano detectada</div>
+      <div class="mano-indicator" id="mano-indicator">Sin mano detectada</div>
 
-      <div style="display:flex; gap:.5rem; margin-top:.75rem; flex-wrap:wrap">
+      <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="iniciarCamara()">📷 Iniciar cámara</button>
         <button class="btn btn-danger btn-sm"  onclick="detenerCamara()">⏹ Detener</button>
         <button class="btn btn-ghost btn-sm"   onclick="limpiarTodo()">🗑 Limpiar</button>
@@ -136,270 +186,610 @@
       </div>
 
       <div class="card card-sm" style="margin-top:1rem">
-        <h4 style="margin-bottom:.6rem;font-size:.8rem;color:var(--text-300);text-transform:uppercase;letter-spacing:.06em">
-          Log del sistema
-        </h4>
+        <h4 style="margin-bottom:.5rem;font-size:.78rem;color:var(--text-300);text-transform:uppercase;letter-spacing:.06em">Log</h4>
         <div class="test-log" id="test-log"></div>
       </div>
     </div>
 
-    <!-- COLUMNA DERECHA: resultados -->
-    <div style="display:flex; flex-direction:column; gap:1rem">
+    <!-- ── PANEL DERECHO ──────────────────────────────────────────── -->
+    <div>
 
-      <div class="card card-sm">
-        <h4 style="margin-bottom:.75rem">Gesto detectado</h4>
-        <div class="test-letra-display" id="letra-display">—</div>
-        <div style="margin-top:.85rem">
-          <div class="test-conf-label">
-            <span>Confianza</span>
-            <span id="conf-valor">0%</span>
-          </div>
-          <div class="progress" style="height:10px">
-            <div class="progress-bar" id="conf-bar"
-                 style="width:0%; transition:width .15s ease, background .3s ease"></div>
+      <!-- ══ PANEL LETRA ══════════════════════════════════════════════ -->
+      <div class="panel-modo activo" id="panel-letra">
+
+        <div class="card card-sm">
+          <h4 style="margin-bottom:.75rem">Letra detectada</h4>
+          <div class="resultado-display letra" id="letra-display">—</div>
+          <div style="margin-top:.85rem">
+            <div class="conf-label">
+              <span>Confianza</span><span id="letra-conf-val">0%</span>
+            </div>
+            <div class="progress" style="height:10px">
+              <div class="progress-bar" id="letra-conf-bar" style="width:0%;transition:width .15s,background .3s"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="card card-sm">
-        <h4 style="margin-bottom:.75rem">Top 3 candidatos</h4>
-        <div class="test-candidatos" id="candidatos">
-          <div class="text-muted text-sm">Inicia la cámara para ver candidatos</div>
-        </div>
-      </div>
-
-      <div class="card card-sm">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.6rem">
-          <h4>Historial de detecciones</h4>
-          <span class="text-xs text-muted">últimas 20</span>
-        </div>
-        <div class="test-historial" id="historial"></div>
-      </div>
-
-      <div class="card card-sm">
-        <h4 style="margin-bottom:.75rem">Estadísticas de sesión</h4>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6rem">
-          <div class="stat-mini">
-            <div class="stat-mini-label">Detecciones</div>
-            <div class="stat-mini-value" id="stat-detecciones" style="color:var(--accent)">0</div>
-          </div>
-          <div class="stat-mini">
-            <div class="stat-mini-label">Confianza prom.</div>
-            <div class="stat-mini-value" id="stat-confianza" style="color:var(--success)">—</div>
-          </div>
-          <div class="stat-mini">
-            <div class="stat-mini-label">Gestos en BD</div>
-            <div class="stat-mini-value" id="stat-gestos" style="color:var(--text-100)">—</div>
-          </div>
-          <div class="stat-mini">
-            <div class="stat-mini-label">Última letra</div>
-            <div class="stat-mini-value" id="stat-ultima" style="color:#f59e0b">—</div>
+        <div class="card card-sm">
+          <h4 style="margin-bottom:.75rem">Top 3 candidatos</h4>
+          <div class="candidatos-list" id="letra-candidatos">
+            <div class="text-muted text-sm">Inicia la cámara para ver candidatos</div>
           </div>
         </div>
+
+        <div class="card card-sm">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+            <h4>Historial</h4><span class="text-xs text-muted">últimas 20</span>
+          </div>
+          <div class="historial-wrap" id="letra-historial"></div>
+        </div>
+
+        <div class="card card-sm">
+          <h4 style="margin-bottom:.75rem">Estadísticas</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+            <div class="stat-mini">
+              <div class="stat-mini-label">Detecciones</div>
+              <div class="stat-mini-value" id="stat-det" style="color:var(--accent)">0</div>
+            </div>
+            <div class="stat-mini">
+              <div class="stat-mini-label">Confianza prom.</div>
+              <div class="stat-mini-value" id="stat-conf" style="color:var(--success)">—</div>
+            </div>
+            <div class="stat-mini">
+              <div class="stat-mini-label">Letras en BD</div>
+              <div class="stat-mini-value" id="stat-letras">—</div>
+            </div>
+            <div class="stat-mini">
+              <div class="stat-mini-label">Última</div>
+              <div class="stat-mini-value" id="stat-ult" style="color:#f59e0b">—</div>
+            </div>
+          </div>
+        </div>
+
       </div>
+
+      <!-- ══ PANEL PALABRA ════════════════════════════════════════════ -->
+      <div class="panel-modo" id="panel-palabra">
+
+        <div class="card card-sm">
+          <h4 style="margin-bottom:.6rem">Palabra reconocida</h4>
+          <div class="resultado-display espera" id="palabra-display">—</div>
+          <div style="margin-top:.85rem">
+            <div class="conf-label">
+              <span>Confianza DTW</span><span id="palabra-conf-val">—</span>
+            </div>
+            <div class="progress" style="height:10px">
+              <div class="progress-bar" id="palabra-conf-bar" style="width:0%;transition:width .3s,background .3s"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instrucciones y control de grabación -->
+        <div class="card card-sm">
+          <h4 style="margin-bottom:.6rem">Captura de movimiento</h4>
+
+          <p class="text-sm text-muted" style="margin:0 0 .75rem">
+            Haz el movimiento completo de la seña. El sistema acumula frames
+            automáticamente mientras hay mano visible. Cuando termines, presiona
+            <strong>Evaluar</strong> o retira la mano un segundo.
+          </p>
+
+          <!-- Indicador de frames acumulados -->
+          <div style="font-size:.78rem;color:var(--text-300);margin-bottom:.3rem">
+            Frames acumulados:
+            <span id="frames-count" style="font-weight:700;color:var(--accent)">0</span>
+            / <span id="frames-max">30</span>
+            <span id="frames-min-label" style="color:var(--text-400);margin-left:.4rem">(mínimo: <span id="frames-min">8</span>)</span>
+          </div>
+          <div class="frames-barra" id="frames-barra"></div>
+
+          <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
+            <button class="btn btn-success btn-sm" id="btn-evaluar" onclick="evaluarDTW()" disabled>
+              🔍 Evaluar movimiento
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="limpiarCapturaDTW()">
+              🔄 Limpiar captura
+            </button>
+          </div>
+
+          <!-- Auto-evaluación -->
+          <label style="display:flex;align-items:center;gap:.5rem;margin-top:.6rem;font-size:.82rem;cursor:pointer">
+            <input type="checkbox" id="auto-eval" checked>
+            Auto-evaluar cuando la mano desaparece
+          </label>
+        </div>
+
+        <!-- Ranking completo -->
+        <div class="card card-sm">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+            <h4>Ranking DTW</h4>
+            <div class="umbral-info" style="padding:.2rem .5rem">
+              Umbral: <span class="umbral-valor" id="umbral-dtw-val">—</span>
+            </div>
+          </div>
+          <div class="candidatos-list" id="palabra-ranking">
+            <div class="text-muted text-sm">Haz un movimiento y presiona Evaluar</div>
+          </div>
+        </div>
+
+        <!-- Historial de palabras -->
+        <div class="card card-sm">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+            <h4>Historial de palabras</h4>
+            <span class="text-xs text-muted">últimas 10</span>
+          </div>
+          <div class="historial-wrap" id="palabra-historial">
+            <span class="text-muted text-sm">Sin palabras evaluadas aún</span>
+          </div>
+        </div>
+
+        <!-- Stats palabras -->
+        <div class="card card-sm">
+          <h4 style="margin-bottom:.75rem">Estadísticas</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+            <div class="stat-mini">
+              <div class="stat-mini-label">Evaluaciones</div>
+              <div class="stat-mini-value" id="stat-eval" style="color:var(--accent)">0</div>
+            </div>
+            <div class="stat-mini">
+              <div class="stat-mini-label">Reconocidas</div>
+              <div class="stat-mini-value" id="stat-reco" style="color:var(--success)">0</div>
+            </div>
+            <div class="stat-mini">
+              <div class="stat-mini-label">Palabras en BD</div>
+              <div class="stat-mini-value" id="stat-palabras">—</div>
+            </div>
+            <div class="stat-mini">
+              <div class="stat-mini-label">Última palabra</div>
+              <div class="stat-mini-value" id="stat-ult-pal" style="color:#f59e0b">—</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- fin panel-palabra -->
 
     </div>
+    <!-- fin columna derecha -->
   </div>
 
 <script src="../js/navbar.js"></script>
 <script src="../js/app.js"></script>
 <script>
-  let stream        = null;
-  let frameTimer    = null;
-  let fpsTimer      = null;
-  let fpsCount      = 0;
-  let gestosDB      = null;
-  let ultimaLetra   = '';
-  let historialArr  = [];
-  let totalDet      = 0;
-  let confAcc       = 0;
+// ═══════════════════════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════════════════
+let stream        = null;
+let frameTimer    = null;
+let fpsTimer      = null;
+let fpsCount      = 0;
+let modoActual    = 'letra';
 
-  const video  = document.getElementById('test-video');
-  const canvas = document.getElementById('test-canvas');
-  const ctx    = canvas.getContext('2d');
+// Datos de gestos
+let letrasDB      = [];
+let palabrasDB    = [];
 
-  function log(msg, tipo = 'info') {
-    const el   = document.getElementById('test-log');
-    const line = document.createElement('div');
-    line.className = tipo === 'ok' ? 'log-ok' : tipo === 'error' ? 'log-err' : tipo === 'warn' ? 'log-warn' : '';
-    line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    el.appendChild(line);
-    el.scrollTop = el.scrollHeight;
-    while (el.children.length > 60) el.removeChild(el.firstChild);
+// Estado modo letra
+let ultimaLetra   = '';
+let histLetra     = [];
+let totalDet      = 0;
+let confAcc       = 0;
+
+// Estado modo palabra
+const FRAMES_MAX  = 30;
+const FRAMES_MIN  = 8;
+let framesAcum    = [];        // Frames normalizados acumulados
+let hayMano       = false;
+let timerAutoEval = null;      // Temporizador para auto-evaluar al retirar la mano
+let evalCount     = 0;
+let recoCount     = 0;
+let histPalabra   = [];
+let evaluando     = false;
+
+const video  = document.getElementById('test-video');
+const canvas = document.getElementById('test-canvas');
+const ctx    = canvas.getContext('2d');
+
+// ═══════════════════════════════════════════════════════════════════════
+// LOG
+// ═══════════════════════════════════════════════════════════════════════
+function log(msg, tipo = 'info') {
+  const el   = document.getElementById('test-log');
+  const line = document.createElement('div');
+  line.className = tipo === 'ok' ? 'log-ok' : tipo === 'error' ? 'log-err' : tipo === 'warn' ? 'log-warn' : '';
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+  while (el.children.length > 80) el.removeChild(el.firstChild);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MODO
+// ═══════════════════════════════════════════════════════════════════════
+function cambiarModo(modo) {
+  modoActual = modo;
+  ['letra', 'palabra'].forEach(m => {
+    document.getElementById(`tab-${m}`).classList.toggle('active', m === modo);
+    document.getElementById(`panel-${m}`).classList.toggle('activo', m === modo);
+  });
+  limpiarCapturaDTW();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CARGAR GESTOS
+// ═══════════════════════════════════════════════════════════════════════
+async function cargarGestos() {
+  try {
+    const { gestos } = await Api.get('/admin/gestos');
+    letrasDB   = gestos.filter(g => g.tipo !== 'word');
+    palabrasDB = gestos.filter(g => g.tipo === 'word');
+    document.getElementById('stat-letras').textContent  = letrasDB.length;
+    document.getElementById('stat-palabras').textContent = palabrasDB.length;
+    log(`${letrasDB.length} letras + ${palabrasDB.length} palabras DTW cargadas`, 'ok');
+  } catch(e) {
+    log('Error cargando gestos: ' + e.message, 'error');
   }
+}
 
-  async function cargarGestos() {
-    try {
-      const { gestos } = await Api.get('/admin/gestos');
-      gestosDB = gestos;
-      document.getElementById('stat-gestos').textContent = gestos.length;
-      log(`${gestos.length} gestos cargados`, 'ok');
-    } catch(e) {
-      log('Error cargando gestos: ' + e.message, 'error');
-    }
+// ═══════════════════════════════════════════════════════════════════════
+// CÁMARA
+// ═══════════════════════════════════════════════════════════════════════
+async function iniciarCamara() {
+  if (stream) return;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video:{width:640,height:480}, audio:false });
+    video.srcObject = stream;
+    await video.play();
+    canvas.width = 640; canvas.height = 480;
+    setBadge(true);
+    log('Cámara iniciada', 'ok');
+    frameTimer = setInterval(capturarYEnviar, 1000 / 15);
+    fpsTimer   = setInterval(() => {
+      document.getElementById('fps-display').textContent = fpsCount + ' fps';
+      fpsCount = 0;
+    }, 1000);
+    if (!letrasDB.length) await cargarGestos();
+  } catch(e) {
+    log('Error de cámara: ' + e.message, 'error');
   }
+}
 
-  async function iniciarCamara() {
-    if (stream) return;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { width:640, height:480 }, audio:false
-      });
-      video.srcObject = stream;
-      await video.play();
-      canvas.width = 640; canvas.height = 480;
+function detenerCamara() {
+  clearInterval(frameTimer); clearInterval(fpsTimer);
+  stream?.getTracks().forEach(t => t.stop());
+  video.srcObject = null; stream = null;
+  setBadge(false);
+  log('Cámara detenida', 'warn');
+}
 
-      setBadge(true);
-      log('Cámara iniciada', 'ok');
+function setBadge(activo) {
+  const b = document.getElementById('badge-camara');
+  b.innerHTML = `<span class="estado-dot"></span> ${activo ? 'Cámara activa' : 'Cámara apagada'}`;
+  b.classList.toggle('activo', activo);
+}
 
-      frameTimer = setInterval(capturarYEnviar, 1000 / 15);
-      fpsTimer   = setInterval(() => {
-        document.getElementById('fps-display').textContent = fpsCount + ' fps';
-        fpsCount = 0;
-      }, 1000);
+// ═══════════════════════════════════════════════════════════════════════
+// CAPTURA DE FRAME (loop cada ~66ms)
+// ═══════════════════════════════════════════════════════════════════════
+async function capturarYEnviar() {
+  if (!video.videoWidth) return;
+  fpsCount++;
 
-      if (!gestosDB) await cargarGestos();
-    } catch(e) {
-      log('Error de cámara: ' + e.message, 'error');
-    }
-  }
+  ctx.save(); ctx.scale(-1, 1);
+  ctx.drawImage(video, -640, 0, 640, 480);
+  ctx.restore();
 
-  function detenerCamara() {
-    clearInterval(frameTimer);
-    clearInterval(fpsTimer);
-    stream?.getTracks().forEach(t => t.stop());
-    video.srcObject = null;
-    stream = null;
-    setBadge(false);
-    log('Cámara detenida', 'warn');
-  }
+  const b64 = canvas.toDataURL('image/jpeg', 0.75).split(',')[1];
 
-  function setBadge(activo) {
-    const b = document.getElementById('test-estado-badge');
-    b.innerHTML = `<span class="test-dot"></span> ${activo ? 'Cámara activa' : 'Cámara apagada'}`;
-    b.classList.toggle('activo', activo);
-  }
+  try {
+    const res  = await fetch('/api/admin/extraer-landmarks', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${Auth.token()}` },
+      body: JSON.stringify({ frame_b64: b64 })
+    });
+    const data = await res.json();
+    const ind  = document.getElementById('mano-indicator');
 
-  async function capturarYEnviar() {
-    if (!video.videoWidth) return;
-    fpsCount++;
+    if (data.landmarks) {
+      ind.textContent = '✋ Mano detectada';
+      ind.className   = 'mano-indicator detectada';
 
-    ctx.save(); ctx.scale(-1,1);
-    ctx.drawImage(video, -640, 0, 640, 480);
-    ctx.restore();
-
-    const b64 = canvas.toDataURL('image/jpeg', 0.75).split(',')[1];
-
-    try {
-      const res = await fetch('/api/admin/extraer-landmarks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Auth.token()}`
-        },
-        body: JSON.stringify({ frame_b64: b64 })
-      });
-      const data = await res.json();
-      const ind  = document.getElementById('test-mano-indicator');
-
-      if (data.landmarks) {
-        ind.textContent = '✋ Mano detectada';
-        ind.className   = 'test-mano-indicator detectada';
-        buscarGesto(data.landmarks);
+      if (modoActual === 'letra') {
+        buscarLetra(data.landmarks);
       } else {
-        ind.textContent = 'Sin mano detectada';
-        ind.className   = 'test-mano-indicator';
-        limpiarDeteccion();
+        acumularFrame(data.landmarks);
       }
-    } catch(e) {
-      log('Error al enviar frame: ' + e.message, 'error');
+
+      // Cancelar timer de auto-eval si la mano volvió
+      if (!hayMano && modoActual === 'palabra') {
+        clearTimeout(timerAutoEval);
+      }
+      hayMano = true;
+
+    } else {
+      ind.textContent = 'Sin mano detectada';
+      ind.className   = 'mano-indicator';
+
+      if (modoActual === 'letra') {
+        limpiarDeteccionLetra();
+      } else if (hayMano && framesAcum.length >= FRAMES_MIN) {
+        // Mano desapareció con suficientes frames → auto-evaluar
+        if (document.getElementById('auto-eval').checked) {
+          clearTimeout(timerAutoEval);
+          timerAutoEval = setTimeout(() => {
+            if (!hayMano) evaluarDTW();
+          }, 600);   // 600ms de pausa para confirmar que terminó el gesto
+        }
+      }
+      hayMano = false;
     }
+  } catch(e) {
+    // Silencioso para no saturar el log
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MODO LETRA — búsqueda euclidiana local
+// ═══════════════════════════════════════════════════════════════════════
+function buscarLetra(landmarks) {
+  if (!letrasDB.length) return;
+
+  const umbral     = 0.5;
+  const resultados = letrasDB.map(g => {
+    if (!g.landmarks || g.landmarks.length !== 63) return { nombre:g.nombre, dist:999 };
+    let suma = 0;
+    for (let i = 0; i < 63; i++) {
+      const d = (landmarks[i] || 0) - (g.landmarks[i] || 0);
+      suma += d * d;
+    }
+    return { nombre:g.nombre, dist:Math.sqrt(suma) };
+  });
+  resultados.sort((a, b) => a.dist - b.dist);
+
+  const mejor    = resultados[0];
+  const confianza = Math.max(0, Math.min(1, 1 - mejor.dist / umbral));
+  actualizarUILetra(mejor.nombre, confianza, resultados.slice(0, 3), umbral);
+}
+
+function actualizarUILetra(nombre, confianza, top3, umbral) {
+  const pct = Math.round(confianza * 100);
+  document.getElementById('letra-display').textContent = nombre || '?';
+  document.getElementById('letra-conf-val').textContent = pct + '%';
+
+  const bar = document.getElementById('letra-conf-bar');
+  bar.style.width      = pct + '%';
+  bar.style.background = pct > 70 ? 'var(--success)' : pct > 40 ? '#f59e0b' : 'var(--danger)';
+
+  if (nombre !== ultimaLetra && confianza > 0.5) {
+    ultimaLetra = nombre;
+    histLetra.push(nombre);
+    if (histLetra.length > 20) histLetra.shift();
+    totalDet++; confAcc += confianza;
+
+    document.getElementById('stat-det').textContent  = totalDet;
+    document.getElementById('stat-conf').textContent = Math.round(confAcc / totalDet * 100) + '%';
+    document.getElementById('stat-ult').textContent  = nombre;
+    document.getElementById('letra-historial').innerHTML =
+      histLetra.map(l => `<span class="hist-chip">${l}</span>`).join('');
+
+    log(`Letra: "${nombre}" (${pct}%)`, confianza > 0.7 ? 'ok' : 'warn');
   }
 
-  function buscarGesto(landmarks) {
-    if (!gestosDB?.length) { cargarGestos(); return; }
+  const colores = ['var(--accent)', 'var(--success)', 'var(--text-300)'];
+  document.getElementById('letra-candidatos').innerHTML = top3.map((c, i) => {
+    const conf  = Math.max(0, Math.round((1 - c.dist / umbral) * 100));
+    const color = colores[i] || colores[2];
+    return `<div class="cand-item">
+      <div class="cand-nombre" style="color:${color}">${c.nombre}</div>
+      <div class="cand-bar-wrap"><div class="cand-bar" style="width:${conf}%;background:${color}"></div></div>
+      <div class="cand-pct">${conf}%</div>
+    </div>`;
+  }).join('');
+}
 
-    const umbral     = 0.5;
-    const resultados = gestosDB.map(g => {
-      const vec = g.landmarks;
-      if (!vec || vec.length !== 63) return { nombre: g.nombre, tipo: g.tipo, dist: 999 };
-      let suma = 0;
-      for (let i = 0; i < 63; i++) {
-        const d = (landmarks[i] || 0) - (vec[i] || 0);
-        suma += d * d;
-      }
-      return { nombre: g.nombre, tipo: g.tipo, dist: Math.sqrt(suma) };
+function limpiarDeteccionLetra() {
+  document.getElementById('letra-display').textContent  = '—';
+  document.getElementById('letra-conf-val').textContent = '0%';
+  document.getElementById('letra-conf-bar').style.width = '0%';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MODO PALABRA — acumulación de frames
+// ═══════════════════════════════════════════════════════════════════════
+function acumularFrame(landmarks) {
+  if (framesAcum.length >= FRAMES_MAX) return;   // Ventana llena
+
+  framesAcum.push(landmarks);
+
+  // Actualizar indicador visual
+  const count = framesAcum.length;
+  document.getElementById('frames-count').textContent = count;
+
+  // Habilitar botón evaluar cuando hay suficientes frames
+  document.getElementById('btn-evaluar').disabled = count < FRAMES_MIN;
+
+  // Badge REC mientras acumula
+  document.getElementById('rec-badge').classList.toggle('visible', count > 0);
+  document.getElementById('camara-wrap').classList.toggle('grabando', count > 0 && count < FRAMES_MAX);
+
+  // Dibujar dots de frames
+  actualizarFramesDots(count);
+}
+
+function actualizarFramesDots(count) {
+  document.getElementById('frames-max').textContent = FRAMES_MAX;
+  document.getElementById('frames-min').textContent = FRAMES_MIN;
+
+  document.getElementById('frames-barra').innerHTML =
+    Array.from({length: FRAMES_MAX}, (_, i) => {
+      const cls = i < count
+        ? (count >= FRAMES_MIN ? 'frame-dot lleno' : 'frame-dot')
+        : 'frame-dot';
+      // Los primeros FRAMES_MIN son "mínimo requerido"
+      const style = i === FRAMES_MIN - 1 ? 'margin-right:4px;' : '';
+      return `<div class="${cls}" style="${style}"></div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// EVALUAR DTW — enviar frames al backend
+// ═══════════════════════════════════════════════════════════════════════
+async function evaluarDTW() {
+  if (framesAcum.length < FRAMES_MIN) {
+    log(`Necesitas al menos ${FRAMES_MIN} frames (tienes ${framesAcum.length})`, 'warn');
+    return;
+  }
+  if (evaluando) return;
+  evaluando = true;
+
+  clearTimeout(timerAutoEval);
+  document.getElementById('btn-evaluar').disabled = true;
+  document.getElementById('rec-badge').classList.remove('visible');
+  document.getElementById('camara-wrap').classList.remove('grabando');
+
+  const framesParaEnviar = [...framesAcum];
+  log(`Evaluando DTW con ${framesParaEnviar.length} frames...`, 'info');
+
+  try {
+    const res = await fetch('/api/admin/test-dtw', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${Auth.token()}` },
+      body: JSON.stringify({ frames: framesParaEnviar })
     });
 
-    resultados.sort((a, b) => a.dist - b.dist);
-    const mejor     = resultados[0];
-    const confianza = Math.max(0, Math.min(1, 1 - (mejor.dist / umbral)));
-
-    actualizarUI(mejor.nombre, confianza, resultados.slice(0, 3), umbral);
-  }
-
-  function actualizarUI(nombre, confianza, top3, umbral) {
-    const pct = Math.round(confianza * 100);
-
-    document.getElementById('letra-display').textContent = nombre || '?';
-    document.getElementById('conf-valor').textContent    = pct + '%';
-
-    const bar = document.getElementById('conf-bar');
-    bar.style.width      = pct + '%';
-    bar.style.background = pct > 70 ? 'var(--success)' : pct > 40 ? '#f59e0b' : 'var(--danger)';
-
-    if (nombre !== ultimaLetra && confianza > 0.5) {
-      ultimaLetra = nombre;
-      historialArr.push(nombre);
-      if (historialArr.length > 20) historialArr.shift();
-      totalDet++; confAcc += confianza;
-
-      document.getElementById('stat-detecciones').textContent = totalDet;
-      document.getElementById('stat-confianza').textContent   = Math.round(confAcc / totalDet * 100) + '%';
-      document.getElementById('stat-ultima').textContent      = nombre;
-      document.getElementById('historial').innerHTML =
-        historialArr.map(l => `<span class="test-hist-chip">${l}</span>`).join('');
-
-      log(`Detectado: "${nombre}" (${pct}%)`, confianza > 0.7 ? 'ok' : 'warn');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Error ${res.status}`);
     }
 
-    const colores = ['var(--accent)', 'var(--success)', 'var(--text-300)'];
-    document.getElementById('candidatos').innerHTML = top3.map((c, i) => {
-      const conf  = Math.max(0, Math.round((1 - c.dist / umbral) * 100));
-      const color = colores[i] || colores[2];
-      return `
-        <div class="test-cand-item">
-          <div class="test-cand-nombre" style="color:${color}">${c.nombre}</div>
-          <div class="test-cand-bar-wrap">
-            <div class="test-cand-bar" style="width:${conf}%; background:${color}"></div>
-          </div>
-          <div class="test-cand-pct">${conf}%</div>
-          <div style="font-size:.72rem;color:var(--text-300);min-width:36px">${c.tipo || ''}</div>
-        </div>`;
-    }).join('');
+    const data = await res.json();
+    mostrarResultadoDTW(data);
+
+    // Limpiar frames después de evaluar para la próxima captura
+    limpiarCapturaDTW(false);
+
+  } catch(e) {
+    log('Error en evaluación DTW: ' + e.message, 'error');
+    document.getElementById('btn-evaluar').disabled = false;
+  } finally {
+    evaluando = false;
+  }
+}
+
+function mostrarResultadoDTW(data) {
+  evalCount++;
+  document.getElementById('stat-eval').textContent = evalCount;
+
+  // Guardar umbral actual
+  if (data.umbral_dtw !== undefined) {
+    document.getElementById('umbral-dtw-val').textContent = data.umbral_dtw.toFixed(3);
   }
 
-  function limpiarDeteccion() {
-    document.getElementById('letra-display').textContent = '—';
-    document.getElementById('conf-valor').textContent    = '0%';
-    document.getElementById('conf-bar').style.width      = '0%';
+  const display  = document.getElementById('palabra-display');
+  const confVal  = document.getElementById('palabra-conf-val');
+  const confBar  = document.getElementById('palabra-conf-bar');
+
+  if (data.mejor) {
+    // ✅ Reconocida
+    const pct = Math.round(data.mejor.confianza * 100);
+    display.textContent = data.mejor.nombre;
+    display.className   = 'resultado-display exito';
+    confVal.textContent = pct + '%';
+    confBar.style.width      = pct + '%';
+    confBar.style.background = pct > 70 ? 'var(--success)' : '#f59e0b';
+
+    recoCount++;
+    document.getElementById('stat-reco').textContent    = recoCount;
+    document.getElementById('stat-ult-pal').textContent = data.mejor.nombre;
+
+    histPalabra.push(data.mejor.nombre);
+    if (histPalabra.length > 10) histPalabra.shift();
+    document.getElementById('palabra-historial').innerHTML =
+      histPalabra.map(p => `<span class="hist-chip word">${p}</span>`).join('');
+
+    document.getElementById('camara-wrap').classList.add('lista');
+    setTimeout(() => document.getElementById('camara-wrap').classList.remove('lista'), 1500);
+
+    log(`✅ Palabra: "${data.mejor.nombre}" (${pct}%, dist=${data.mejor.distancia})`, 'ok');
+
+  } else {
+    // ❌ No reconocida
+    display.textContent = '?';
+    display.className   = 'resultado-display fallo';
+    const mejorDist = data.ranking?.[0]?.distancia ?? '—';
+    confVal.textContent = `No reconocida (umbral=${data.umbral_dtw?.toFixed(3) ?? '—'})`;
+    confBar.style.width = '0%';
+
+    log(`❌ Sin coincidencia. Mejor dist=${mejorDist}, umbral=${data.umbral_dtw}`, 'warn');
+
+    if (data.palabras_en_bd === 0) {
+      log('No hay palabras entrenadas en la BD. Usa el entrenador primero.', 'warn');
+    }
   }
 
-  function limpiarTodo() {
-    historialArr = []; ultimaLetra = ''; totalDet = 0; confAcc = 0;
-    limpiarDeteccion();
-    document.getElementById('historial').innerHTML        = '';
-    document.getElementById('candidatos').innerHTML       = '<div class="text-muted text-sm">Sin detecciones</div>';
-    document.getElementById('stat-detecciones').textContent = '0';
-    document.getElementById('stat-confianza').textContent   = '—';
-    document.getElementById('stat-ultima').textContent      = '—';
-    log('Sesión limpiada', 'warn');
+  // Mostrar ranking completo
+  const colores = ['var(--success)', 'var(--accent)', 'var(--text-300)'];
+  const umbral  = data.umbral_dtw || 0.45;
+
+  document.getElementById('palabra-ranking').innerHTML =
+    (data.ranking || []).map((c, i) => {
+      const pct   = Math.round(c.confianza * 100);
+      const color = i === 0 && data.mejor ? 'var(--success)' : (colores[i] || colores[2]);
+      const superaUmbral = c.distancia <= umbral;
+      return `<div class="cand-item" style="${superaUmbral ? 'border-color:rgba(34,197,94,.3)' : ''}">
+        <div class="cand-nombre" style="color:${color}">${c.nombre}</div>
+        <div class="cand-bar-wrap">
+          <div class="cand-bar" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <div class="cand-pct">${pct}%</div>
+        <div class="cand-dist">d=${c.distancia}</div>
+      </div>`;
+    }).join('') || '<div class="text-muted text-sm">Sin palabras en BD</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// LIMPIAR
+// ═══════════════════════════════════════════════════════════════════════
+function limpiarCapturaDTW(limpiarDisplay = true) {
+  framesAcum = [];
+  clearTimeout(timerAutoEval);
+  document.getElementById('frames-count').textContent = '0';
+  document.getElementById('btn-evaluar').disabled     = true;
+  document.getElementById('rec-badge').classList.remove('visible');
+  document.getElementById('camara-wrap').classList.remove('grabando', 'lista');
+  actualizarFramesDots(0);
+  if (limpiarDisplay) {
+    document.getElementById('palabra-display').textContent = '—';
+    document.getElementById('palabra-display').className   = 'resultado-display espera';
+    document.getElementById('palabra-conf-val').textContent = '—';
+    document.getElementById('palabra-conf-bar').style.width = '0%';
   }
+}
 
-  window.addEventListener('beforeunload', detenerCamara);
-  window.addEventListener('pagehide', detenerCamara);
+function limpiarTodo() {
+  // Letras
+  histLetra = []; ultimaLetra = ''; totalDet = 0; confAcc = 0;
+  limpiarDeteccionLetra();
+  document.getElementById('letra-historial').innerHTML  = '';
+  document.getElementById('letra-candidatos').innerHTML = '<div class="text-muted text-sm">Sin detecciones</div>';
+  document.getElementById('stat-det').textContent  = '0';
+  document.getElementById('stat-conf').textContent = '—';
+  document.getElementById('stat-ult').textContent  = '—';
+  // Palabras
+  histPalabra = []; evalCount = 0; recoCount = 0;
+  limpiarCapturaDTW();
+  document.getElementById('palabra-historial').innerHTML = '<span class="text-muted text-sm">Sin palabras evaluadas aún</span>';
+  document.getElementById('palabra-ranking').innerHTML   = '<div class="text-muted text-sm">Haz un movimiento y presiona Evaluar</div>';
+  document.getElementById('stat-eval').textContent = '0';
+  document.getElementById('stat-reco').textContent = '0';
+  document.getElementById('stat-ult-pal').textContent = '—';
+  log('Sesión limpiada', 'warn');
+}
 
-  cargarGestos();
+window.addEventListener('beforeunload', detenerCamara);
+window.addEventListener('pagehide', detenerCamara);
+
+cargarGestos();
 </script>
 </body>
 </html>
