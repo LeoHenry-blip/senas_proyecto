@@ -15,6 +15,7 @@ PROYECTO DE SEÑAS (I-2026)
         →El objetivo principal de este proyecto es eliminar la brecha de comunicaion entre una persona con discapacida y su entorno.
 
 
+//hollaaaaa
 
 #PROCESO PARA ENTRAR AL CODIGO:
 1) EJECUTAR ESTOS 2 COMANDOS:
