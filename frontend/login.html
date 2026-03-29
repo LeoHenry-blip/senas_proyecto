@@ -449,11 +449,59 @@
   <div class="left-panel">
     <div class="form-card">
 
-      <!-- Marca -->
-      <div class="brand">
-        <div class="brand-icon">🤟</div>
-        <div class="brand-name">Señas<span>V2</span></div>
-      </div>
+     <!-- Marca — cambia solo la URL del src -->
+<style>
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: 2.5rem;
+}
+.brand-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(124,58,237,.4);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.brand-icon img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  transition: transform .3s ease;
+}
+.brand-icon:hover img {
+  transform: scale(1.08);
+}
+.brand-icon .brand-fallback {
+  font-size: 1.25rem;
+  display: none;
+}
+.brand-name {
+  font-size: .95rem; font-weight: 700;
+  letter-spacing: -.02em;
+  color: #e9d5ff;
+}
+.brand-name span {
+  color: rgba(233,213,255,.45);
+  font-weight: 400;
+}
+</style>
+
+<div class="brand">
+  <div class="brand-icon">
+    <img
+      src="https://cdn-icons-png.flaticon.com/512/1000/1000946.png"
+      alt="Señas V2"
+      onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+    >
+    <span class="brand-fallback"></span>
+  </div>
+  <div class="brand-name">INICIA TU SESION AQUÍ!<span></span></div>
+</div>
 
       <!-- Encabezado -->
       <div class="form-heading">
