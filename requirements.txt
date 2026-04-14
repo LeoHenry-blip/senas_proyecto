@@ -1,0 +1,22 @@
+opencv-python
+mediapipe
+numpy
+pandas
+scikit-learn
+joblib
+pyttsx3
+#PROYECTO SISTEMA TRADUCTOR DE GESTOS (PARA PERSONAS CON DISCAPACIDAD)
+Lenguaje utlizado =ASL (Lenguaje de señas Americana) 26 letras
+#Entorno de trabajo Venv
+Entorno de trabajo= venv(siempre debe estar activo en la terminal)
+activar venv= venv\Scripts\activate  
+#instalar con este comando las librerias
+pip install -r requirements.txt
+#Para ejecutar el Programa
+python main.py
+#Para realizar el entrenamiento de las letras
+python captura_letras.py
+#Iniciar de nuevo el entrenamiento(inicar de cero)
+python limpiar_dataset.py
+#Terminal de ejecucion codigo
+Command Pront

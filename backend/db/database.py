@@ -184,12 +184,13 @@ CREATE TABLE IF NOT EXISTS reunion_participantes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
--- TABLA: mensajes
+-- TABLA: mensajes (ACTUALIZADA CON GESTO_ID)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS mensajes (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     reunion_id      INT                 NOT NULL,
     usuario_id      INT                 NOT NULL,
+    gesto_id        INT                 DEFAULT NULL, -- <--- NUEVA COLUMNA
     texto_original  TEXT                NOT NULL,
     texto_corregido TEXT                DEFAULT NULL,
     tipo            ENUM('senas','texto','sistema') DEFAULT 'senas',
@@ -197,9 +198,9 @@ CREATE TABLE IF NOT EXISTS mensajes (
     enviado_en      DATETIME            DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (reunion_id) REFERENCES reuniones(id) ON DELETE CASCADE,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+    FOREIGN KEY (gesto_id)   REFERENCES gestos(id)   ON DELETE SET NULL, -- <--- NUEVA RELACIÓN
     INDEX idx_reunion_tiempo (reunion_id, enviado_en)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 -- ============================================================
 -- TABLA: gestos
 -- v3.0: agrega secuencia_json para palabras con movimiento (DTW)
@@ -275,12 +276,32 @@ def migrar_agregar_secuencia_json():
         # MySQL lanza error si la columna ya existe — es esperado, ignorar
         pass
 
+def migrar_agregar_gesto_id_a_mensajes():
+    """
+    Agrega la columna gesto_id y su FK a la tabla mensajes si no existen.
+    Mantiene la base de datos sincronizada con la normalización.
+    """
+    try:
+        # Intentamos añadir la columna
+        db.execute("ALTER TABLE mensajes ADD COLUMN gesto_id INT DEFAULT NULL")
+        # Intentamos añadir la relación
+        db.execute("""
+            ALTER TABLE mensajes 
+            ADD CONSTRAINT fk_mensaje_gesto 
+            FOREIGN KEY (gesto_id) REFERENCES gestos(id) 
+            ON DELETE SET NULL
+        """)
+        print("[DB] Migración: columna gesto_id añadida a mensajes")
+    except Exception:
+        # Si ya existe, MySQL dará error y simplemente lo saltamos
+        pass
 
 def inicializar_db():
     """
     Punto de entrada principal: crea la DB, las tablas y los datos por defecto.
     Llamar una vez al arrancar el servidor.
     """
+
     print("[DB] Inicializando base de datos MySQL...")
 
     # 1. Crear la base de datos si no existe
@@ -308,6 +329,7 @@ def inicializar_db():
 
     # 4. Migraciones seguras (idempotentes — seguro correr en cada arranque)
     migrar_agregar_secuencia_json()
+    migrar_agregar_gesto_id_a_mensajes()
 
     print("[DB] ✅ Base de datos lista para usar")
 
