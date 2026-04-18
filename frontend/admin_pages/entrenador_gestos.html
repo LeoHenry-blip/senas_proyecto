@@ -36,6 +36,38 @@
     .rec-dot { width:8px; height:8px; border-radius:50%; background:#fff; animation:parpadeo .8s infinite; }
     .captura-estado { display:flex; align-items:center; gap:.5rem; padding:.6rem .75rem; margin-top:.6rem; background:var(--bg-700); border:1px solid var(--border); border-radius:var(--radius-md); font-size:.83rem; color:var(--text-300); }
     .norm-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .5rem; border-radius:4px; font-size:.7rem; font-weight:600; background:rgba(34,197,94,.12); color:var(--success); border:1px solid rgba(34,197,94,.2); margin-left:.4rem; }
+    /* Estado cuando se está grabando la ráfaga (Manteniendo S) */
+    .camara-box.grabando-rafaga {
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Animación para el contador de muestras */
+    #muestras-conteo {
+      transition: all 0.1s ease;
+      display: inline-block;
+    }
+
+    #muestras-conteo.cambiando {
+      transform: scale(1.2);
+      color: var(--accent);
+    }
+
+
+
+    /* Estilo para el cuadro de instrucción visual */
+    .captura-instruccion {
+      background: var(--bg-700);
+      border: 2px dashed var(--border);
+      transition: all 0.3s ease;
+    }
+
+    .captura-instruccion.activa {
+      background: rgba(79, 142, 247, 0.1);
+      border-color: var(--accent);
+      border-style: solid;
+      color: var(--text-100) !important;
+    }
   </style>
 </head>
 
@@ -58,7 +90,7 @@
 
   <!-- CÁMARA -->
   <div>
-    <div class="camara-box">
+    <div class="camara-box" id="camara-wrap">
       <video id="cam-video" autoplay muted playsinline></video>
       <canvas id="cam-canvas"></canvas>
       <div class="cuenta-overlay" id="cuenta-overlay" style="display:none">
@@ -73,7 +105,7 @@
 
     <!-- Dots modo LETRA -->
     <div id="panel-letra-cam" class="panel-modo activo" style="margin-top:.75rem">
-      <div style="font-size:.8rem;color:var(--text-300);margin-bottom:.4rem">Muestras: <span id="muestras-conteo">0</span>/30</div>
+      <div style="font-size:.8rem;color:var(--text-300);margin-bottom:.4rem">Muestras capturadas: <span id="muestras-conteo">0</span></div>
       <div class="muestras-contador" id="muestras-dots"></div>
       <div class="progress" style="height:8px;margin-top:.5rem">
         <div id="captura-progress" class="progress-bar green" style="width:0%"></div>
@@ -88,7 +120,7 @@
         <div class="rep-dot pendiente" id="rep-1">2</div>
         <div class="rep-dot pendiente" id="rep-2">3</div>
       </div>
-      <div style="font-size:.75rem;color:var(--text-400);margin-top:.4rem" id="rep-hint">
+      <div style="font-size:.75rem;color:var(--text-300);margin-top:.4rem" id="rep-hint">
         Haz el movimiento completo de la seña en cada repetición
       </div>
       <div class="progress" style="height:8px;margin-top:.5rem">
@@ -117,9 +149,11 @@
     <!-- Panel LETRA -->
     <div id="panel-letra-ctrl" class="panel-modo activo card card-sm flex-col gap-3">
       <h4>Captura — modo letra estática</h4>
-      <p class="text-sm text-muted" style="margin:0">Mantén la mano quieta. Se toman 30 muestras, se normalizan y se promedian.</p>
+      <div class="captura-instruccion">
+        Presiona [S] para grabar ráfaga
+      </div>
+      <p class="text-sm text-muted" style="margin:0">Configura el nombre y mantén presionada la tecla para capturar.</p>
       <button class="btn btn-primary btn-full" id="btn-activar-cam" onclick="activarCamara()">📷 Activar cámara</button>
-      <button class="btn btn-success btn-full" id="btn-iniciar-captura" onclick="iniciarCaptura()" disabled>⏺️ Iniciar captura (30 muestras)</button>
       <button class="btn btn-primary btn-full" id="btn-guardar" onclick="guardarGesto()" disabled>💾 Guardar letra</button>
       <button class="btn btn-ghost btn-full btn-sm" onclick="resetCaptura()">🔄 Reiniciar</button>
     </div>
@@ -279,47 +313,55 @@ async function extraerYNormalizar(b64) {
 // ═══════════════════════════════════════════════════════════════
 // MODO LETRA — captura estática (30 muestras)
 // ═══════════════════════════════════════════════════════════════
-let muestras   = [];
-let capturando = false;
+let muestras = [];
+let esPresionado = false;
 
-function iniciarCaptura() {
-  const nombre = document.getElementById('gesto-nombre').value.trim();
-  if (!nombre) { toast('Ingresa el nombre del gesto', 'error'); return; }
-  if (!camStream) { toast('Activa la cámara primero', 'error'); return; }
-  resetCaptura(false); capturando = true;
-  document.getElementById('cuenta-sub').textContent = 'Mantén el gesto estático';
-  _cuentaRegresiva(3, () => {
-    setEstado('⏺️ Capturando... mantén la mano quieta.');
-    _capturarMuestrasLetra();
-  });
-}
+// Escuchar cuando se presiona la tecla
+window.addEventListener('keydown', async (e) => {
+  if (modoActual !== 'letra' || !camStream) return;
 
-async function _capturarMuestrasLetra() {
-  for (let i = 0; i < 30 && capturando; i++) {
+  // Si presiona 'S' y no estaba ya presionado
+  if (e.key.toLowerCase() === 's' && !esPresionado) {
+    const nombre = document.getElementById('gesto-nombre').value.trim();
+    if (!nombre) { toast('Ingresa el nombre del gesto', 'error'); return; }
+
+    esPresionado = true;
+    setEstado('⏺️ Capturando ráfaga... ¡Mueve ligeramente la mano!');
+    document.getElementById('rec-badge').classList.add('visible');
+    document.getElementById('camara-wrap').classList.add('grabando-rafaga');
+    document.querySelector('.captura-instruccion').classList.add('activa');
+    _ejecutarRafaga();
+  }
+});
+
+// Escuchar cuando se suelta la tecla
+window.addEventListener('keyup', (e) => {
+  if (e.key.toLowerCase() === 's') {
+    esPresionado = false;
+    document.getElementById('rec-badge').classList.remove('visible');
+    document.getElementById('camara-wrap').classList.remove('grabando-rafaga');
+    document.querySelector('.captura-instruccion').classList.remove('activa');
+    if (muestras.length > 0) {
+      document.getElementById('btn-guardar').disabled = false;
+      setEstado(`✅ ${muestras.length} muestras capturadas. Presiona "Guardar letra".`);
+    }
+  }
+});
+
+async function _ejecutarRafaga() {
+  while (esPresionado) {
     try {
       const lm = await extraerYNormalizar(capturarFrameB64());
-      if (lm) { muestras.push(lm); _actualizarDots(muestras.length); }
-    } catch(e) {}
-    await _esperar(65);
+      if (lm) {
+        muestras.push(lm);
+        _actualizarInterfazRafaga(muestras.length);
+      }
+    } catch (e) {
+      console.error("Error en frame:", e);
+    }
+    // Pequeña pausa para no saturar el socket/API (aprox 15-20 FPS)
+    await _esperar(50);
   }
-  capturando = false;
-  if (muestras.length >= 10) {
-    document.getElementById('btn-guardar').disabled = false;
-    setEstado(`✅ ${muestras.length} muestras normalizadas. Presiona "Guardar letra".`);
-    toast(`${muestras.length} muestras OK`, 'success');
-  } else {
-    setEstado('⚠️ Pocas muestras. Asegúrate de que la mano sea visible.');
-    toast('No se detectó mano en suficientes frames', 'error');
-  }
-}
-
-function _actualizarDots(n) {
-  document.getElementById('muestras-conteo').textContent  = n;
-  document.getElementById('captura-progress').style.width = (n/30*100) + '%';
-  document.getElementById('muestras-dots').innerHTML =
-    Array.from({length:30}, (_,i) =>
-      `<div class="muestra-dot ${i<n?'pulso':'pendiente'}"></div>`
-    ).join('');
 }
 
 async function guardarGesto() {

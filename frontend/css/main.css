@@ -17,7 +17,7 @@
   --bg-500:   #273348;
 
   /* Bordes */
-  --border:       #2a3550;
+  --border: #ffffff;
   --border-light: #3a4f70;
 
   /* Acentos — paleta Stripe-inspired */
@@ -31,7 +31,7 @@
   /* Texto */
   --text-100: #eaf0fa;
   --text-200: #b0bcce;
-  --text-300: #6b7fa0;
+  --text-300: #fcfcfc;
 
   /* Semánticos */
   --success: #10b981;
