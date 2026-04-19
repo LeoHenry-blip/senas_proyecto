@@ -3,87 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Entrenador de Gestos</title>
+  <title>Entrenador de Gestos — SVM</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/main.css">
   <style>
     body { background:var(--bg-900); color:var(--text-100); min-height:100vh; padding:1.75rem 2rem; overflow-y:auto; }
+
     .entrenador-grid { display:grid; grid-template-columns:420px 1fr; gap:1.5rem; }
-    .camara-box { position:relative; background:#000; border-radius:var(--radius-lg); overflow:hidden; aspect-ratio:4/3; border:2px solid var(--border); }
+
+    /* Cámara */
+    .camara-box { position:relative; background:#000; border-radius:var(--radius-lg); overflow:hidden; aspect-ratio:4/3; border:2px solid var(--border); transition:border-color .3s, box-shadow .3s; }
     .camara-box video  { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
     .camara-box canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
-    .cuenta-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,.6); }
-    .cuenta-num { font-size:7rem; font-weight:900; color:#f59e0b; line-height:1; }
-    .cuenta-sub { font-size:1rem; color:#fff; margin-top:.5rem; }
+    .camara-box.grabando { border-color:var(--danger) !important; box-shadow:0 0 24px rgba(239,68,68,.5); }
+    .camara-box.lista    { border-color:var(--success) !important; box-shadow:0 0 24px rgba(34,197,94,.4); }
+
+    /* Countdown overlay */
+    .cuenta-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(0,0,0,.65); }
+    .cuenta-num { font-size:8rem; font-weight:900; color:#f59e0b; line-height:1; }
+    .cuenta-sub { font-size:1rem; color:#fff; margin-top:.5rem; text-align:center; padding:0 1rem; }
+
+    /* REC badge */
+    .rec-badge { position:absolute; top:10px; right:10px; background:var(--danger); color:#fff; padding:.25rem .6rem; border-radius:20px; font-size:.75rem; font-weight:700; display:none; align-items:center; gap:.3rem; }
+    .rec-badge.visible { display:flex; }
+    @keyframes parpadeo { 0%,100%{opacity:1} 50%{opacity:.25} }
+    .rec-dot { width:8px; height:8px; border-radius:50%; background:#fff; animation:parpadeo .8s infinite; }
+
+    /* Indicador de manos */
+    .manos-indicator { position:absolute; bottom:8px; left:8px; display:flex; gap:4px; }
+    .mano-pill { padding:.15rem .45rem; border-radius:12px; font-size:.68rem; font-weight:700; background:rgba(0,0,0,.55); }
+    .mano-pill.activa { background:rgba(34,197,94,.75); color:#fff; }
+    .mano-pill.inactiva { background:rgba(0,0,0,.45); color:rgba(255,255,255,.4); }
+
+    /* Modo tabs */
     .modo-tabs { display:flex; gap:.4rem; margin-bottom:1rem; }
     .modo-tab { flex:1; padding:.5rem; text-align:center; cursor:pointer; border-radius:var(--radius-md); border:2px solid var(--border); font-weight:600; font-size:.85rem; transition:all .2s; background:var(--bg-700); color:var(--text-300); }
     .modo-tab.active { border-color:var(--accent); color:var(--accent); background:rgba(79,142,247,.12); }
     .panel-modo { display:none; }
     .panel-modo.activo { display:block; }
+
+    /* Estado */
+    .captura-estado { display:flex; align-items:center; gap:.5rem; padding:.6rem .75rem; margin-top:.6rem; background:var(--bg-700); border:1px solid var(--border); border-radius:var(--radius-md); font-size:.83rem; color:var(--text-300); min-height:42px; }
+
+    /* Badge */
+    .norm-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .5rem; border-radius:4px; font-size:.7rem; font-weight:600; background:rgba(34,197,94,.12); color:var(--success); border:1px solid rgba(34,197,94,.2); margin-left:.4rem; }
+    .svm-badge  { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .5rem; border-radius:4px; font-size:.7rem; font-weight:600; background:rgba(79,142,247,.12); color:var(--accent); border:1px solid rgba(79,142,247,.2); margin-left:.4rem; }
+    .manos-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .5rem; border-radius:4px; font-size:.7rem; font-weight:600; background:rgba(168,85,247,.12); color:#a855f7; border:1px solid rgba(168,85,247,.2); margin-left:.4rem; }
+
+    /* Círculos de muestras SVM */
+    .muestras-anillo-wrap { display:flex; align-items:center; justify-content:center; margin:1rem 0; }
+    .anillo-svg { transform:rotate(-90deg); }
+    .anillo-bg  { fill:none; stroke:var(--bg-500); stroke-width:8; }
+    .anillo-fg  { fill:none; stroke:var(--accent); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .3s ease; }
+    .anillo-fg.completo { stroke:var(--success); }
+    .anillo-texto { position:absolute; text-align:center; }
+    .anillo-num   { font-size:2.2rem; font-weight:900; font-family:var(--font-mono); color:var(--accent); line-height:1; }
+    .anillo-num.completo { color:var(--success); }
+    .anillo-label { font-size:.75rem; color:var(--text-300); margin-top:.2rem; }
+
+    /* Dots de muestras */
+    .muestras-dots-wrap { display:flex; gap:3px; flex-wrap:wrap; margin:.5rem 0; }
+    .m-dot { width:9px; height:9px; border-radius:50%; background:var(--bg-500); transition:background .1s; }
+    .m-dot.llena { background:var(--accent); }
+    .m-dot.lista  { background:var(--success); }
+
+    /* Gestos en BD */
+    .gestos-lista { display:flex; flex-direction:column; gap:.4rem; max-height:200px; overflow-y:auto; }
+    .gesto-item { display:flex; align-items:center; justify-content:space-between; padding:.35rem .6rem; background:var(--bg-700); border:1px solid var(--border); border-radius:var(--radius-sm); font-size:.82rem; }
+    .gesto-nombre { font-family:var(--font-mono); font-weight:700; }
+    .gesto-count { color:var(--text-300); font-size:.75rem; }
+    .gesto-ok { color:var(--success); }
+    .gesto-warn { color:#f59e0b; }
+    .gesto-del { cursor:pointer; color:var(--danger); font-size:.75rem; padding:.1rem .3rem; border-radius:3px; }
+    .gesto-del:hover { background:rgba(239,68,68,.15); }
+
+    /* Botón de entrenamiento */
+    .btn-entrenar-wrap { margin-top:1rem; }
+    .precision-badge { display:inline-flex; align-items:center; gap:.4rem; padding:.4rem .8rem; border-radius:var(--radius-md); background:rgba(34,197,94,.12); border:1px solid rgba(34,197,94,.25); color:var(--success); font-size:.82rem; font-weight:600; }
+
+    /* Dots para modo letra */
     .muestras-contador { display:flex; gap:4px; flex-wrap:wrap; }
     .muestra-dot { width:10px; height:10px; border-radius:50%; background:var(--success); }
-    .muestra-dot.pendiente { background:var(--bg-500); }
-    @keyframes pulso { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4)} }
-    .pulso { animation:pulso .3s ease; }
-    .rep-indicadores { display:flex; gap:.6rem; margin:.75rem 0; }
-    .rep-dot { width:36px; height:36px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; color:var(--text-300); transition:all .3s; }
-    .rep-dot.lista    { background:var(--success); border-color:var(--success); color:#fff; }
-    .rep-dot.grabando { background:var(--danger); border-color:var(--danger); color:#fff; animation:pulso .6s ease infinite; }
-    .rep-dot.pendiente{ background:var(--bg-600); }
-    .rec-badge { position:absolute; top:10px; right:10px; background:var(--danger); color:#fff; padding:.25rem .6rem; border-radius:20px; font-size:.75rem; font-weight:700; display:none; align-items:center; gap:.3rem; }
-    .rec-badge.visible { display:flex; }
-    @keyframes parpadeo { 0%,100%{opacity:1} 50%{opacity:.3} }
-    .rec-dot { width:8px; height:8px; border-radius:50%; background:#fff; animation:parpadeo .8s infinite; }
-    .captura-estado { display:flex; align-items:center; gap:.5rem; padding:.6rem .75rem; margin-top:.6rem; background:var(--bg-700); border:1px solid var(--border); border-radius:var(--radius-md); font-size:.83rem; color:var(--text-300); }
-    .norm-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .5rem; border-radius:4px; font-size:.7rem; font-weight:600; background:rgba(34,197,94,.12); color:var(--success); border:1px solid rgba(34,197,94,.2); margin-left:.4rem; }
-    /* Estado cuando se está grabando la ráfaga (Manteniendo S) */
-    .camara-box.grabando-rafaga {
-      border-color: var(--danger) !important;
-      box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
-    }
 
-    /* Animación para el contador de muestras */
-    #muestras-conteo {
-      transition: all 0.1s ease;
-      display: inline-block;
-    }
+    .instruccion-letra { background:var(--bg-700); border:2px dashed var(--border); border-radius:var(--radius-md); padding:.6rem .75rem; font-size:.83rem; color:var(--text-300); transition:all .3s; }
+    .instruccion-letra.activa { background:rgba(79,142,247,.1); border-color:var(--accent); border-style:solid; color:var(--text-100); }
 
-    #muestras-conteo.cambiando {
-      transform: scale(1.2);
-      color: var(--accent);
-    }
-
-
-
-    /* Estilo para el cuadro de instrucción visual */
-    .captura-instruccion {
-      background: var(--bg-700);
-      border: 2px dashed var(--border);
-      transition: all 0.3s ease;
-    }
-
-    .captura-instruccion.activa {
-      background: rgba(79, 142, 247, 0.1);
-      border-color: var(--accent);
-      border-style: solid;
-      color: var(--text-100) !important;
-    }
+    /* Indicador de frames en vivo durante grabación SVM */
+    .frames-live { font-size:.75rem; color:var(--text-300); text-align:center; margin-top:.25rem; min-height:1.2em; }
   </style>
 </head>
 
-<!--
-  data-theme-only → navbar.js NO renderiza navbar aquí (es un iframe).
-  Solo aplica el tema guardado y lo sincroniza en tiempo real.
--->
 <body data-theme-only>
 
 <h2 style="margin-bottom:1.5rem">🖐️ Entrenador de gestos
   <span class="norm-badge">✓ normalización 3 capas</span>
+  <span class="svm-badge">⚡ SVM</span>
+  <span class="manos-badge">🤲 2 manos (126 dims)</span>
 </h2>
 
 <div class="modo-tabs">
   <div class="modo-tab active" id="tab-letra"   onclick="cambiarModo('letra')">✋ Letra / Gesto estático</div>
-  <div class="modo-tab"        id="tab-palabra" onclick="cambiarModo('palabra')">🤟 Palabra con movimiento (DTW)</div>
+  <div class="modo-tab"        id="tab-palabra" onclick="cambiarModo('palabra')">🤟 Palabra con movimiento (SVM)</div>
 </div>
 
 <div class="entrenador-grid">
@@ -95,36 +115,50 @@
       <canvas id="cam-canvas"></canvas>
       <div class="cuenta-overlay" id="cuenta-overlay" style="display:none">
         <div class="cuenta-num" id="cuenta-num">3</div>
-        <div class="cuenta-sub" id="cuenta-sub">Prepárate...</div>
+        <div class="cuenta-sub" id="cuenta-sub">Prepárate para hacer el movimiento</div>
       </div>
       <div class="rec-badge" id="rec-badge"><div class="rec-dot"></div> REC</div>
+      <!-- Indicadores de manos detectadas -->
+      <div class="manos-indicator">
+        <span class="mano-pill inactiva" id="pill-derecha">D</span>
+        <span class="mano-pill inactiva" id="pill-izquierda">I</span>
+      </div>
     </div>
+
     <div class="captura-estado" id="captura-estado">
       <span>📷</span><span>Activa la cámara y elige un gesto para comenzar</span>
     </div>
 
-    <!-- Dots modo LETRA -->
+    <!-- Panel letra -->
     <div id="panel-letra-cam" class="panel-modo activo" style="margin-top:.75rem">
-      <div style="font-size:.8rem;color:var(--text-300);margin-bottom:.4rem">Muestras capturadas: <span id="muestras-conteo">0</span></div>
-      <div class="muestras-contador" id="muestras-dots"></div>
+      <div style="font-size:.8rem;color:var(--text-300);margin-bottom:.4rem">
+        Muestras capturadas: <span id="muestras-conteo">0</span>
+        <span style="color:var(--text-400);margin-left:.5rem;font-size:.75rem">(usa solo mano derecha)</span>
+      </div>
+      <div class="muestras-contador" id="muestras-dots-letra"></div>
       <div class="progress" style="height:8px;margin-top:.5rem">
-        <div id="captura-progress" class="progress-bar green" style="width:0%"></div>
+        <div id="captura-progress-letra" class="progress-bar green" style="width:0%"></div>
       </div>
     </div>
 
-    <!-- Indicadores modo PALABRA -->
+    <!-- Panel palabra/SVM -->
     <div id="panel-palabra-cam" class="panel-modo" style="margin-top:.75rem">
-      <div style="font-size:.8rem;color:var(--text-300);margin-bottom:.5rem">Repeticiones grabadas (necesitas 3):</div>
-      <div class="rep-indicadores">
-        <div class="rep-dot pendiente" id="rep-0">1</div>
-        <div class="rep-dot pendiente" id="rep-1">2</div>
-        <div class="rep-dot pendiente" id="rep-2">3</div>
+      <div class="muestras-anillo-wrap" style="position:relative">
+        <svg class="anillo-svg" width="120" height="120" viewBox="0 0 120 120">
+          <circle class="anillo-bg" cx="60" cy="60" r="52"/>
+          <circle class="anillo-fg" id="anillo-fg" cx="60" cy="60" r="52"
+                  stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+        </svg>
+        <div class="anillo-texto" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
+          <div class="anillo-num" id="anillo-num">0</div>
+          <div class="anillo-label">/ <span id="anillo-total">50</span></div>
+        </div>
       </div>
-      <div style="font-size:.75rem;color:var(--text-300);margin-top:.4rem" id="rep-hint">
-        Haz el movimiento completo de la seña en cada repetición
-      </div>
-      <div class="progress" style="height:8px;margin-top:.5rem">
-        <div id="captura-progress-dtw" class="progress-bar" style="width:0%;background:var(--accent)"></div>
+      <div class="muestras-dots-wrap" id="muestras-dots-svm"></div>
+      <!-- Indicador en vivo de frames capturados durante la grabación -->
+      <div class="frames-live" id="frames-live"></div>
+      <div style="font-size:.75rem;color:var(--text-300);margin-top:.4rem;text-align:center" id="svm-hint">
+        Graba el movimiento completo con ambas manos visibles
       </div>
     </div>
   </div>
@@ -132,6 +166,7 @@
   <!-- CONTROLES -->
   <div class="flex-col gap-4">
 
+    <!-- Configurar gesto -->
     <div class="card card-sm">
       <h4 style="margin-bottom:.75rem">Configurar gesto</h4>
       <div class="input-group" style="margin-bottom:.75rem">
@@ -149,27 +184,74 @@
     <!-- Panel LETRA -->
     <div id="panel-letra-ctrl" class="panel-modo activo card card-sm flex-col gap-3">
       <h4>Captura — modo letra estática</h4>
-      <div class="captura-instruccion">
-        Presiona [S] para grabar ráfaga
+      <div class="instruccion-letra" id="instruccion-letra">
+        Mantén presionada <strong>[S]</strong> para capturar ráfaga de muestras
       </div>
-      <p class="text-sm text-muted" style="margin:0">Configura el nombre y mantén presionada la tecla para capturar.</p>
+      <p class="text-sm text-muted" style="margin:0">
+        Mueve ligeramente la mano derecha mientras mantienes [S]. Las letras usan solo 1 mano (63 dims).
+      </p>
       <button class="btn btn-primary btn-full" id="btn-activar-cam" onclick="activarCamara()">📷 Activar cámara</button>
-      <button class="btn btn-primary btn-full" id="btn-guardar" onclick="guardarGesto()" disabled>💾 Guardar letra</button>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="resetCaptura()">🔄 Reiniciar</button>
+      <button class="btn btn-primary btn-full" id="btn-guardar-letra" onclick="guardarLetra()" disabled>💾 Guardar letra</button>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="resetLetra()">🔄 Reiniciar</button>
     </div>
 
-    <!-- Panel PALABRA -->
+    <!-- Panel PALABRA/SVM -->
     <div id="panel-palabra-ctrl" class="panel-modo card card-sm flex-col gap-3">
-      <h4>Captura — modo palabra con movimiento</h4>
+      <h4>Captura — modo SVM (movimiento)</h4>
+
+      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+        <div>
+          <label style="font-size:.8rem;color:var(--text-300);display:block;margin-bottom:.3rem">Muestras objetivo</label>
+          <select id="sel-muestras" class="input" style="width:auto" onchange="actualizarObjetivo()">
+            <option value="20">20 muestras (rápido)</option>
+            <option value="50" selected>50 muestras (recomendado)</option>
+            <option value="80">80 muestras (máxima precisión)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.8rem;color:var(--text-300);display:block;margin-bottom:.3rem">Duración por muestra</label>
+          <select id="sel-duracion" class="input" style="width:auto">
+            <option value="2000">2 segundos</option>
+            <option value="3000" selected>3 segundos</option>
+            <option value="4000">4 segundos</option>
+          </select>
+        </div>
+      </div>
+
       <p class="text-sm text-muted" style="margin:0">
-        Graba el movimiento completo <strong>3 veces</strong>. Cada frame se normaliza antes de guardar.
+        Cada muestra graba ambas manos (126 dims). Si el gesto usa solo 1 mano,
+        la otra se rellena con ceros automáticamente.
       </p>
-      <button class="btn btn-primary btn-full" id="btn-activar-cam-dtw" onclick="activarCamara()">📷 Activar cámara</button>
-      <button class="btn btn-success btn-full" id="btn-grabar-rep" onclick="grabarRepeticion()" disabled>
-        ⏺️ Grabar repetición <span id="rep-num-btn">1</span>/3
-      </button>
-      <button class="btn btn-primary btn-full" id="btn-guardar-dtw" onclick="guardarPalabraDTW()" disabled>💾 Guardar palabra</button>
-      <button class="btn btn-ghost btn-full btn-sm" onclick="resetCapturaDTW()">🔄 Reiniciar grabación</button>
+
+      <button class="btn btn-primary btn-full" id="btn-activar-cam-svm" onclick="activarCamara()">📷 Activar cámara</button>
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-success" style="flex:1" id="btn-iniciar-svm" onclick="iniciarSesionSVM()" disabled>
+          ▶️ Iniciar grabación
+        </button>
+        <button class="btn btn-danger" style="flex:1" id="btn-detener-svm" onclick="detenerSesionSVM()" disabled>
+          ⏹ Detener
+        </button>
+      </div>
+
+      <button class="btn btn-ghost btn-full btn-sm" onclick="resetSVM()">🔄 Reiniciar conteo</button>
+    </div>
+
+    <!-- Gestos grabados en BD -->
+    <div class="card card-sm">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <h4>Gestos en BD</h4>
+        <button class="btn btn-ghost btn-sm" onclick="cargarEstadoSVM()">🔄 Actualizar</button>
+      </div>
+      <div class="gestos-lista" id="gestos-lista">
+        <div class="text-muted text-sm">Cargando...</div>
+      </div>
+      <div class="btn-entrenar-wrap">
+        <button class="btn btn-primary btn-full" id="btn-entrenar" onclick="entrenarModelo()" disabled>
+          🧠 Entrenar modelo SVM
+        </button>
+        <div id="precision-result" style="margin-top:.5rem;display:none"></div>
+      </div>
     </div>
 
     <!-- Acceso rápido -->
@@ -182,44 +264,14 @@
   </div>
 </div>
 
-<!-- navbar.js: modo solo-tema por data-theme-only en <body> -->
 <script src="../js/navbar.js"></script>
 <script src="../js/app.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════
-// NORMALIZACIÓN — idéntica a NormalizadorMano en base_datos.py
-// ═══════════════════════════════════════════════════════════════
-function normalizarVector(v) {
-  const out = new Float32Array(v);
-
-  const wx = out[0], wy = out[1], wz = out[2];
-  for (let i = 0; i < 21; i++) {
-    out[i*3]     -= wx;
-    out[i*3 + 1] -= wy;
-    out[i*3 + 2] -= wz;
-  }
-
-  const refX = out[9*3], refY = out[9*3 + 1];
-  const dist  = Math.sqrt(refX*refX + refY*refY);
-  if (dist > 1e-6) {
-    for (let i = 0; i < 63; i++) out[i] /= dist;
-  }
-
-  let norma = 0;
-  for (let i = 0; i < 63; i++) norma += out[i]*out[i];
-  norma = Math.sqrt(norma);
-  if (norma > 1e-6) {
-    for (let i = 0; i < 63; i++) out[i] /= norma;
-  }
-
-  return Array.from(out);
-}
-
-// ═══════════════════════════════════════════════════════════════
 // ACCESO RÁPIDO
 // ═══════════════════════════════════════════════════════════════
 const LETRAS   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const PALABRAS = ['HOLA','GRACIAS','SÍ','NO','POR FAVOR','BUENOS DÍAS','AYUDA'];
+const PALABRAS = ['HOLA','GRACIAS','SÍ','NO','POR FAVOR','BUENOS DÍAS','AYUDA','¿CÓMO ESTÁS?'];
 
 document.getElementById('abecedario-btns').innerHTML =
   LETRAS.split('').map(l =>
@@ -242,15 +294,23 @@ function cambiarModo(modo) {
     document.getElementById(`panel-${m}-cam`).classList.toggle('activo', m === modo);
     document.getElementById(`panel-${m}-ctrl`).classList.toggle('activo', m === modo);
   });
-  document.getElementById('abecedario-btns').style.display = modo === 'letra'   ? 'flex'  : 'none';
-  document.getElementById('palabras-btns').style.display   = modo === 'palabra' ? 'flex'  : 'none';
-  resetCaptura(false); resetCapturaDTW(false);
-  setEstado('Activa la cámara y configura el gesto.');
+  document.getElementById('abecedario-btns').style.display = modo === 'letra'   ? 'flex' : 'none';
+  document.getElementById('palabras-btns').style.display   = modo === 'palabra' ? 'flex' : 'none';
 }
 
-function seleccionarLetra(l)  { cambiarModo('letra');   document.getElementById('gesto-nombre').value = l; document.getElementById('gesto-desc').value = `Letra ${l} del abecedario`; }
-function seleccionarPalabra(w){ cambiarModo('palabra'); document.getElementById('gesto-nombre').value = w; document.getElementById('gesto-desc').value = `Palabra con movimiento: ${w}`; }
-function setEstado(msg) { document.getElementById('captura-estado').innerHTML = `<span>📋</span><span>${msg}</span>`; }
+function seleccionarLetra(l) {
+  cambiarModo('letra');
+  document.getElementById('gesto-nombre').value = l;
+  document.getElementById('gesto-desc').value   = `Letra ${l} del abecedario`;
+}
+function seleccionarPalabra(w) {
+  cambiarModo('palabra');
+  document.getElementById('gesto-nombre').value = w;
+  document.getElementById('gesto-desc').value   = `Gesto con movimiento: ${w}`;
+}
+function setEstado(msg) {
+  document.getElementById('captura-estado').innerHTML = `<span>📋</span><span>${msg}</span>`;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // CÁMARA
@@ -261,31 +321,32 @@ async function activarCamara() {
   if (camStream) { desactivarCamara(); return; }
   try {
     camStream = await navigator.mediaDevices.getUserMedia({ video:{width:640,height:480}, audio:false });
-    const video = document.getElementById('cam-video');
-    video.srcObject = camStream;
-    await video.play();
-    ['btn-activar-cam','btn-activar-cam-dtw'].forEach(id => {
+    document.getElementById('cam-video').srcObject = camStream;
+    await document.getElementById('cam-video').play();
+    ['btn-activar-cam','btn-activar-cam-svm'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.textContent = '⏹ Detener cámara';
     });
-    document.getElementById('btn-iniciar-captura').disabled = false;
-    document.getElementById('btn-grabar-rep').disabled      = false;
-    setEstado('📷 Cámara activa. Configura el gesto y presiona captura.');
-    toast('Cámara activada', 'success');
-  } catch(e) { toast('No se pudo acceder a la cámara', 'error'); }
+    document.getElementById('btn-iniciar-svm').disabled = false;
+    setEstado('📷 Cámara activa. Configura el gesto y presiona Iniciar grabación.');
+    if (typeof toast === 'function') toast('Cámara activada', 'success');
+  } catch(e) {
+    setEstado('❌ No se pudo acceder a la cámara. Revisa los permisos del navegador.');
+    if (typeof toast === 'function') toast('Error de cámara', 'error');
+  }
 }
 
 function desactivarCamara() {
+  detenerSesionSVM();
   camStream?.getTracks().forEach(t => t.stop());
   document.getElementById('cam-video').srcObject = null;
   camStream = null;
-  ['btn-activar-cam','btn-activar-cam-dtw'].forEach(id => {
+  ['btn-activar-cam','btn-activar-cam-svm'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = '📷 Activar cámara';
   });
-  document.getElementById('btn-iniciar-captura').disabled = true;
-  document.getElementById('btn-grabar-rep').disabled      = true;
-  resetCaptura(); resetCapturaDTW();
+  document.getElementById('btn-iniciar-svm').disabled = true;
+  setEstado('Cámara desactivada.');
 }
 
 function capturarFrameB64() {
@@ -299,225 +360,394 @@ function capturarFrameB64() {
   return canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
 }
 
-async function extraerYNormalizar(b64) {
-  const res = await fetch('/api/admin/extraer-landmarks', {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${Auth.token()}` },
+// ═══════════════════════════════════════════════════════════════
+// EXTRAER LANDMARKS — v3.0 retorna 126 floats (2 manos)
+// ═══════════════════════════════════════════════════════════════
+async function extraerLandmarks(b64) {
+  const res  = await fetch('/api/admin/extraer-landmarks', {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${Auth.token()}`
+    },
     body: JSON.stringify({ frame_b64: b64 })
   });
   const data = await res.json();
-  if (!data.landmarks || data.landmarks.length !== 63) return null;
-  return normalizarVector(data.landmarks);
+
+  // Actualizar indicadores de manos en la cámara
+  _actualizarPills(data.landmarks_right, data.landmarks_left);
+
+  // data.landmarks: 126 floats (derecha[0..62] + izquierda[63..125])
+  // null si no hay ninguna mano
+  if (!data.landmarks || data.landmarks.length < 63) return null;
+  return data.landmarks;
+}
+
+function _actualizarPills(right, left) {
+  const pillD = document.getElementById('pill-derecha');
+  const pillI = document.getElementById('pill-izquierda');
+  if (pillD) pillD.className = 'mano-pill ' + (right ? 'activa' : 'inactiva');
+  if (pillI) pillI.className = 'mano-pill ' + (left  ? 'activa' : 'inactiva');
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MODO LETRA — captura estática (30 muestras)
+// MODO LETRA — captura con [S]
+// Solo usa los primeros 63 floats (mano derecha)
 // ═══════════════════════════════════════════════════════════════
-let muestras = [];
-let esPresionado = false;
+let muestrasLetra   = [];   // Cada elemento: Array de 63 floats (solo mano derecha)
+let teclaPresionada = false;
 
-// Escuchar cuando se presiona la tecla
 window.addEventListener('keydown', async (e) => {
-  if (modoActual !== 'letra' || !camStream) return;
-
-  // Si presiona 'S' y no estaba ya presionado
-  if (e.key.toLowerCase() === 's' && !esPresionado) {
-    const nombre = document.getElementById('gesto-nombre').value.trim();
-    if (!nombre) { toast('Ingresa el nombre del gesto', 'error'); return; }
-
-    esPresionado = true;
-    setEstado('⏺️ Capturando ráfaga... ¡Mueve ligeramente la mano!');
-    document.getElementById('rec-badge').classList.add('visible');
-    document.getElementById('camara-wrap').classList.add('grabando-rafaga');
-    document.querySelector('.captura-instruccion').classList.add('activa');
-    _ejecutarRafaga();
-  }
+  if (modoActual !== 'letra' || !camStream || teclaPresionada) return;
+  if (e.key.toLowerCase() !== 's') return;
+  const nombre = document.getElementById('gesto-nombre').value.trim();
+  if (!nombre) { if (typeof toast === 'function') toast('Ingresa el nombre', 'error'); return; }
+  teclaPresionada = true;
+  setEstado('⏺️ Capturando... Mueve ligeramente la mano derecha.');
+  document.getElementById('rec-badge').classList.add('visible');
+  document.getElementById('camara-wrap').classList.add('grabando');
+  document.getElementById('instruccion-letra').classList.add('activa');
+  _rafagaLetra();
 });
 
-// Escuchar cuando se suelta la tecla
 window.addEventListener('keyup', (e) => {
-  if (e.key.toLowerCase() === 's') {
-    esPresionado = false;
-    document.getElementById('rec-badge').classList.remove('visible');
-    document.getElementById('camara-wrap').classList.remove('grabando-rafaga');
-    document.querySelector('.captura-instruccion').classList.remove('activa');
-    if (muestras.length > 0) {
-      document.getElementById('btn-guardar').disabled = false;
-      setEstado(`✅ ${muestras.length} muestras capturadas. Presiona "Guardar letra".`);
-    }
+  if (e.key.toLowerCase() !== 's') return;
+  teclaPresionada = false;
+  document.getElementById('rec-badge').classList.remove('visible');
+  document.getElementById('camara-wrap').classList.remove('grabando');
+  document.getElementById('instruccion-letra').classList.remove('activa');
+  if (muestrasLetra.length > 0) {
+    document.getElementById('btn-guardar-letra').disabled = false;
+    setEstado(`✅ ${muestrasLetra.length} muestras. Presiona "Guardar letra".`);
   }
 });
 
-async function _ejecutarRafaga() {
-  while (esPresionado) {
+async function _rafagaLetra() {
+  while (teclaPresionada) {
     try {
-      const lm = await extraerYNormalizar(capturarFrameB64());
-      if (lm) {
-        muestras.push(lm);
-        _actualizarInterfazRafaga(muestras.length);
+      const lm = await extraerLandmarks(capturarFrameB64());
+      // ── Solo guardar si hay mano detectada y el vector tiene al menos 63 floats
+      if (lm && lm.length >= 63) {
+        // Guardar solo los primeros 63 floats (mano derecha)
+        // La BD de letras espera exactamente 63 floats (gesto estático, 1 mano)
+        muestrasLetra.push(lm.slice(0, 63));
+        _actualizarDotsLetra(muestrasLetra.length);
       }
-    } catch (e) {
-      console.error("Error en frame:", e);
-    }
-    // Pequeña pausa para no saturar el socket/API (aprox 15-20 FPS)
+    } catch(e) { console.warn('Error en ráfaga letra:', e); }
     await _esperar(50);
   }
 }
 
-async function guardarGesto() {
-  if (!muestras.length) { toast('Primero captura muestras', 'error'); return; }
+function _actualizarDotsLetra(total) {
+  document.getElementById('muestras-conteo').textContent = total;
+  const MAX = 60;
+  document.getElementById('captura-progress-letra').style.width = Math.min(100, total/MAX*100) + '%';
+  document.getElementById('muestras-dots-letra').innerHTML =
+    Array.from({length: Math.min(total, MAX)}, () => `<div class="muestra-dot"></div>`).join('');
+}
+
+async function guardarLetra() {
+  if (!muestrasLetra.length) return;
   const nombre = document.getElementById('gesto-nombre').value.trim().toUpperCase();
   const desc   = document.getElementById('gesto-desc').value.trim();
-  const promedio = muestras[0].map((_,i) =>
-    muestras.reduce((s,m) => s + m[i], 0) / muestras.length
+  if (!nombre) { if (typeof toast === 'function') toast('Ingresa el nombre', 'error'); return; }
+
+  // muestrasLetra[i] ya son arrays de 63 floats (slice hecho en _rafagaLetra)
+  const promedio = muestrasLetra[0].map((_, i) =>
+    muestrasLetra.reduce((s, m) => s + m[i], 0) / muestrasLetra.length
   );
+
   try {
     await Api.post('/admin/gestos', {
-      nombre, tipo:'letter', descripcion:desc,
-      landmarks:promedio, muestras_usadas:muestras.length
+      nombre, tipo:'letter', descripcion: desc || `Letra ${nombre}`,
+      landmarks: promedio, muestras_usadas: muestrasLetra.length
     });
-    toast(`Letra "${nombre}" guardada`, 'success');
-    resetCaptura();
+    if (typeof toast === 'function') toast(`Letra "${nombre}" guardada`, 'success');
+    resetLetra();
     document.getElementById('gesto-nombre').value = '';
     document.getElementById('gesto-desc').value   = '';
-  } catch(e) { toast(e.message, 'error'); }
+  } catch(e) { if (typeof toast === 'function') toast(e.message, 'error'); }
 }
 
-function resetCaptura(limpiarEstado = true) {
-  muestras = []; capturando = false;
-  document.getElementById('btn-guardar').disabled          = true;
-  document.getElementById('captura-progress').style.width  = '0%';
-  document.getElementById('muestras-conteo').textContent   = '0';
-  document.getElementById('muestras-dots').innerHTML       = '';
-  document.getElementById('cuenta-overlay').style.display  = 'none';
-  if (limpiarEstado) setEstado('Activa la cámara y elige un gesto para comenzar.');
-}
-
-// ═══════════════════════════════════════════════════════════════
-// MODO PALABRA — captura DTW (3 repeticiones)
-// ═══════════════════════════════════════════════════════════════
-let secuenciasDTW = [];
-let repActual     = 0;
-let grabandoDTW   = false;
-
-async function grabarRepeticion() {
-  const nombre = document.getElementById('gesto-nombre').value.trim();
-  if (!nombre) { toast('Ingresa el nombre de la palabra', 'error'); return; }
-  if (!camStream) { toast('Activa la cámara primero', 'error'); return; }
-  if (grabandoDTW || repActual >= 3) return;
-
-  grabandoDTW = true;
-  document.getElementById('btn-grabar-rep').disabled = true;
-  document.getElementById(`rep-${repActual}`).classList.add('grabando');
-  document.getElementById('cuenta-sub').textContent = 'Prepárate para hacer el movimiento completo';
-  await _cuentaRegresivaAsync(3);
-
-  setEstado(`🔴 Grabando rep ${repActual+1}/3... ¡Haz el movimiento ahora!`);
-  document.getElementById('rec-badge').classList.add('visible');
-
-  const framesNorm = [];
-  for (let i = 0; i < 40 && grabandoDTW; i++) {
-    try {
-      const lm = await extraerYNormalizar(capturarFrameB64());
-      if (lm) framesNorm.push(lm);
-    } catch(e) {}
-    document.getElementById('captura-progress-dtw').style.width =
-      ((repActual * 40 + i) / 120 * 100) + '%';
-    await _esperar(60);
-  }
-
+function resetLetra() {
+  muestrasLetra = []; teclaPresionada = false;
+  document.getElementById('btn-guardar-letra').disabled          = true;
+  document.getElementById('captura-progress-letra').style.width  = '0%';
+  document.getElementById('muestras-conteo').textContent         = '0';
+  document.getElementById('muestras-dots-letra').innerHTML       = '';
+  document.getElementById('camara-wrap').classList.remove('grabando','lista');
   document.getElementById('rec-badge').classList.remove('visible');
-
-  if (framesNorm.length >= 5) {
-    const seq10 = _resamplear(framesNorm, 10);
-    secuenciasDTW.push(seq10);
-
-    document.getElementById(`rep-${repActual}`).classList.remove('grabando');
-    document.getElementById(`rep-${repActual}`).classList.add('lista');
-    repActual++;
-
-    if (repActual >= 3) {
-      document.getElementById('btn-guardar-dtw').disabled = false;
-      document.getElementById('btn-grabar-rep').disabled  = true;
-      document.getElementById('rep-hint').textContent     = '✅ 3 repeticiones listas. Guarda la palabra.';
-      setEstado('✅ 3 repeticiones capturadas. Presiona "Guardar palabra".');
-      toast('3 repeticiones capturadas', 'success');
-    } else {
-      document.getElementById('btn-grabar-rep').disabled = false;
-      document.getElementById('rep-num-btn').textContent = repActual + 1;
-      setEstado(`✅ Rep ${repActual}/3 lista. Haz la siguiente cuando estés listo.`);
-      toast(`Repetición ${repActual} capturada (${framesNorm.length} frames → 10)`, 'success');
-    }
-  } else {
-    document.getElementById(`rep-${repActual}`).classList.remove('grabando');
-    document.getElementById('btn-grabar-rep').disabled = false;
-    setEstado('⚠️ No se detectó mano. Inténtalo de nuevo.');
-    toast('Mano no detectada en suficientes frames', 'error');
-  }
-  grabandoDTW = false;
 }
 
-async function guardarPalabraDTW() {
-  if (secuenciasDTW.length < 3) { toast('Necesitas 3 repeticiones', 'error'); return; }
+// ═══════════════════════════════════════════════════════════════
+// MODO PALABRA — sesión automática SVM (frames de 126 floats)
+// ═══════════════════════════════════════════════════════════════
+let muestrasActuales = 0;
+let objetivoMuestras = 50;
+let sesionActiva     = false;
+let detenerSesion    = false;
+
+function actualizarObjetivo() {
+  objetivoMuestras = parseInt(document.getElementById('sel-muestras').value);
+  document.getElementById('anillo-total').textContent = objetivoMuestras;
+  _actualizarAnillo(muestrasActuales);
+}
+
+async function iniciarSesionSVM() {
   const nombre = document.getElementById('gesto-nombre').value.trim().toUpperCase();
-  const desc   = document.getElementById('gesto-desc').value.trim();
-  try {
-    await Api.post('/admin/gestos', {
-      nombre,
-      tipo:           'word',
-      descripcion:    desc || `Palabra con movimiento: ${nombre}`,
-      secuencia:      secuenciasDTW,
-      landmarks:      secuenciasDTW[0][0],
-      muestras_usadas: secuenciasDTW.length
-    });
-    toast(`Palabra "${nombre}" guardada con DTW (normalizada)`, 'success');
-    resetCapturaDTW();
-    document.getElementById('gesto-nombre').value = '';
-    document.getElementById('gesto-desc').value   = '';
-  } catch(e) { toast(e.message, 'error'); }
+  if (!nombre) { if (typeof toast === 'function') toast('Ingresa el nombre del gesto', 'error'); return; }
+  if (!camStream) { if (typeof toast === 'function') toast('Activa la cámara primero', 'error'); return; }
+  if (sesionActiva) return;
+
+  sesionActiva  = true;
+  detenerSesion = false;
+  document.getElementById('btn-iniciar-svm').disabled     = true;
+  document.getElementById('btn-detener-svm').disabled     = false;
+  document.getElementById('btn-activar-cam-svm').disabled = true;
+
+  setEstado(`🔴 Sesión activa para "${nombre}". Realiza el gesto en cada grabación.`);
+
+  while (!detenerSesion && muestrasActuales < objetivoMuestras) {
+    setEstado(`📍 Muestra ${muestrasActuales + 1}/${objetivoMuestras} — Prepárate...`);
+    await _cuentaRegresivaAsync(2);
+    if (detenerSesion) break;
+
+    const duracion = parseInt(document.getElementById('sel-duracion').value);
+    const frames   = await _grabarMuestra(duracion, muestrasActuales + 1);
+    if (detenerSesion) break;
+
+    // ── CORRECCIÓN: el mínimo de frames aceptados se redujo de 5 a 3
+    // para no descartar muestras cuando el servidor tarda un poco más
+    if (frames.length >= 3) {
+      try {
+        const res = await Api.post('/admin/muestras-svm', {
+          nombre,
+          frames,         // Array de arrays de 126 floats
+          agregar: true,
+        });
+        muestrasActuales = res.total_muestras;
+        _actualizarAnillo(muestrasActuales);
+        document.getElementById('frames-live').textContent = '';
+        setEstado(`✅ Muestra ${muestrasActuales}/${objetivoMuestras} guardada (${frames.length} frames × ${frames[0]?.length || 126} dims)`);
+        if (typeof toast === 'function' && muestrasActuales % 10 === 0) {
+          toast(`${muestrasActuales} muestras grabadas`, 'success');
+        }
+      } catch(e) {
+        console.error('Error guardando muestra:', e);
+        setEstado(`❌ Error al guardar: ${e.message}`);
+      }
+    } else {
+      // ── Informar cuántos frames llegaron para que el usuario sepa qué pasa
+      setEstado(`⚠️ Solo ${frames.length} frames capturados (mínimo 3). ¿Hay mano visible? Repitiendo...`);
+      if (typeof toast === 'function') toast(`Pocos frames (${frames.length}). Acerca la mano a la cámara.`, 'error');
+    }
+
+    if (!detenerSesion && muestrasActuales < objetivoMuestras) {
+      await _esperar(1000);
+    }
+  }
+
+  sesionActiva = false;
+  document.getElementById('btn-detener-svm').disabled     = true;
+  document.getElementById('btn-iniciar-svm').disabled     = false;
+  document.getElementById('btn-activar-cam-svm').disabled = false;
+  document.getElementById('camara-wrap').classList.remove('grabando');
+  document.getElementById('rec-badge').classList.remove('visible');
+  document.getElementById('frames-live').textContent = '';
+
+  if (muestrasActuales >= objetivoMuestras) {
+    document.getElementById('camara-wrap').classList.add('lista');
+    setEstado(`🎉 ¡${muestrasActuales} muestras completadas para "${nombre}"!`);
+    if (typeof toast === 'function') toast(`¡${nombre} completado! Ahora entrena el modelo.`, 'success');
+    setTimeout(() => document.getElementById('camara-wrap').classList.remove('lista'), 2000);
+  } else {
+    setEstado(`Sesión detenida. ${muestrasActuales} muestras guardadas.`);
+  }
+
+  await cargarEstadoSVM();
 }
 
-function resetCapturaDTW(limpiarEstado = true) {
-  secuenciasDTW = []; repActual = 0; grabandoDTW = false;
-  document.getElementById('btn-guardar-dtw').disabled          = true;
-  document.getElementById('btn-grabar-rep').disabled           = !camStream;
-  document.getElementById('rep-num-btn').textContent           = '1';
-  document.getElementById('captura-progress-dtw').style.width  = '0%';
+async function _grabarMuestra(duracionMs, numMuestra) {
+  const frames   = [];
+  document.getElementById('rec-badge').classList.add('visible');
+  document.getElementById('camara-wrap').classList.add('grabando');
+  document.getElementById('frames-live').textContent = 'Capturando frames...';
+
+  const inicio    = Date.now();
+  // ── CORRECCIÓN PRINCIPAL: ya no usamos setInterval fijo de 60ms
+  // En su lugar enviamos peticiones en serie pero sin espera artificial,
+  // dejando que la red dicte el ritmo. Esto evita que peticiones lentas
+  // se acumulen o que el bucle termine con 0 frames por timeout.
+  while (Date.now() - inicio < duracionMs && !detenerSesion) {
+    try {
+      const lm = await extraerLandmarks(capturarFrameB64());
+      // lm es null si no hay mano, o array de 126 floats si hay al menos 1 mano
+      if (lm && lm.length >= 63) {
+        frames.push(lm);   // 126 floats — el servidor acepta 63 o 126
+        // Mostrar progreso en vivo para que el usuario vea que está funcionando
+        document.getElementById('frames-live').textContent =
+          `🎞 ${frames.length} frame${frames.length !== 1 ? 's' : ''} capturado${frames.length !== 1 ? 's' : ''}`;
+      }
+    } catch(e) { console.warn('Error capturando frame SVM:', e); }
+    // Pequeña pausa solo si el servidor respondió muy rápido,
+    // para no saturarlo con más de ~15 fps
+    const elapsed = Date.now() - inicio;
+    const minCiclo = 66; // ~15 fps máximo
+    if (elapsed < frames.length * minCiclo) await _esperar(20);
+  }
+
   document.getElementById('rec-badge').classList.remove('visible');
-  document.getElementById('rep-hint').textContent = 'Haz el movimiento completo de la seña en cada repetición';
-  [0,1,2].forEach(i => {
-    const d = document.getElementById(`rep-${i}`);
-    d.className = 'rep-dot pendiente'; d.textContent = i+1;
-  });
-  if (limpiarEstado) setEstado('Activa la cámara y configura la palabra.');
+  document.getElementById('camara-wrap').classList.remove('grabando');
+  return frames;
+}
+
+function detenerSesionSVM() {
+  detenerSesion = true;
+  sesionActiva  = false;
+  document.getElementById('btn-detener-svm').disabled     = true;
+  document.getElementById('btn-iniciar-svm').disabled     = false;
+  document.getElementById('btn-activar-cam-svm').disabled = false;
+  document.getElementById('camara-wrap').classList.remove('grabando');
+  document.getElementById('rec-badge').classList.remove('visible');
+  document.getElementById('cuenta-overlay').style.display = 'none';
+  document.getElementById('frames-live').textContent = '';
+}
+
+function resetSVM() {
+  muestrasActuales = 0;
+  _actualizarAnillo(0);
+  document.getElementById('frames-live').textContent = '';
+  document.getElementById('svm-hint').textContent = 'Graba el movimiento completo con ambas manos visibles';
+  setEstado('Conteo reiniciado. Las muestras en el servidor se mantienen.');
+}
+
+function _actualizarAnillo(actual) {
+  const total  = objetivoMuestras;
+  const pct    = Math.min(1, actual / total);
+  const circ   = 2 * Math.PI * 52;
+  const offset = circ * (1 - pct);
+  const fg     = document.getElementById('anillo-fg');
+  const num    = document.getElementById('anillo-num');
+  fg.style.strokeDashoffset = offset;
+  fg.classList.toggle('completo', actual >= total);
+  num.textContent = actual;
+  num.classList.toggle('completo', actual >= total);
+
+  const MAX_DOTS = 50;
+  const dotsEl   = document.getElementById('muestras-dots-svm');
+  dotsEl.innerHTML = Array.from({length: MAX_DOTS}, (_, i) => {
+    const cls = i < actual ? (actual >= total ? 'lista' : 'llena') : '';
+    return `<div class="m-dot ${cls}"></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ESTADO SVM Y ENTRENAMIENTO
+// ═══════════════════════════════════════════════════════════════
+async function cargarEstadoSVM() {
+  try {
+    const data = await Api.get('/admin/estado-svm');
+    const lista = document.getElementById('gestos-lista');
+
+    if (!data.muestras_guardadas || Object.keys(data.muestras_guardadas).length === 0) {
+      lista.innerHTML = '<div class="text-muted text-sm">Sin gestos grabados aún</div>';
+      document.getElementById('btn-entrenar').disabled = true;
+      return;
+    }
+
+    const minMuestras = 5;
+    let todosListos   = true;
+    lista.innerHTML   = Object.entries(data.muestras_guardadas).map(([nombre, count]) => {
+      const ok = count >= minMuestras;
+      if (!ok) todosListos = false;
+      return `<div class="gesto-item">
+        <span class="gesto-nombre">${nombre}</span>
+        <span class="gesto-count ${ok ? 'gesto-ok' : 'gesto-warn'}">
+          ${count} muestras ${ok ? '✓' : '(mín. ' + minMuestras + ')'}
+        </span>
+        <span class="gesto-del" onclick="eliminarMuestras('${nombre}')">✕</span>
+      </div>`;
+    }).join('');
+
+    const hayDosGestos = Object.keys(data.muestras_guardadas).length >= 2;
+    document.getElementById('btn-entrenar').disabled = !(todosListos && hayDosGestos);
+
+    if (data.modelo_entrenado) {
+      lista.innerHTML += `<div style="margin-top:.5rem;font-size:.75rem;color:var(--success)">
+        ✓ Modelo activo: ${data.gestos_en_modelo.join(', ')}
+      </div>`;
+    }
+  } catch(e) {
+    console.error('Error cargando estado SVM:', e);
+  }
+}
+
+async function eliminarMuestras(nombre) {
+  if (!confirm(`¿Eliminar todas las muestras de "${nombre}"?`)) return;
+  try {
+    await Api.delete(`/admin/muestras-svm/${nombre}`);
+    if (typeof toast === 'function') toast(`Muestras de "${nombre}" eliminadas`, 'success');
+    await cargarEstadoSVM();
+  } catch(e) {
+    if (typeof toast === 'function') toast(e.message, 'error');
+  }
+}
+
+async function entrenarModelo() {
+  const btn = document.getElementById('btn-entrenar');
+  btn.disabled    = true;
+  btn.textContent = '⏳ Entrenando...';
+  setEstado('🧠 Entrenando modelo SVM... Esto puede tomar unos segundos.');
+
+  try {
+    const data = await Api.post('/admin/entrenar-svm', {});
+    const pct  = Math.round(data.precision * 100);
+
+    document.getElementById('precision-result').style.display = 'flex';
+    document.getElementById('precision-result').innerHTML =
+      `<div class="precision-badge">✓ Modelo entrenado — Precisión: ${pct}% — ${data.dims_por_frame || 126} dims/frame</div>`;
+
+    setEstado(`✅ Modelo SVM entrenado con ${data.total_muestras} muestras. Precisión: ${pct}%`);
+    if (typeof toast === 'function') toast(`Modelo entrenado (${pct}% precisión)`, 'success');
+
+    await cargarEstadoSVM();
+  } catch(e) {
+    setEstado(`❌ Error entrenando: ${e.message}`);
+    if (typeof toast === 'function') toast('Error entrenando el modelo', 'error');
+  } finally {
+    btn.textContent = '🧠 Entrenar modelo SVM';
+    btn.disabled    = false;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
-function _resamplear(frames, target) {
-  if (frames.length === target) return frames;
-  return Array.from({length: target}, (_, i) => {
-    const idx = i * (frames.length - 1) / (target - 1);
-    const lo  = Math.floor(idx), hi = Math.min(lo+1, frames.length-1);
-    const t   = idx - lo;
-    return frames[lo].map((v, j) => v*(1-t) + frames[hi][j]*t);
-  });
-}
-
 function _cuentaRegresiva(s, cb) {
   let n = s;
-  document.getElementById('cuenta-overlay').style.display = 'flex';
+  const overlay = document.getElementById('cuenta-overlay');
+  overlay.style.display = 'flex';
   document.getElementById('cuenta-num').textContent = n;
+  document.getElementById('cuenta-sub').textContent = 'Prepárate para hacer el gesto';
   const iv = setInterval(() => {
     n--;
-    if (n > 0) { document.getElementById('cuenta-num').textContent = n; }
-    else { clearInterval(iv); document.getElementById('cuenta-overlay').style.display='none'; cb(); }
+    if (n > 0) {
+      document.getElementById('cuenta-num').textContent = n;
+    } else {
+      clearInterval(iv);
+      overlay.style.display = 'none';
+      cb();
+    }
   }, 1000);
 }
 function _cuentaRegresivaAsync(s) { return new Promise(r => _cuentaRegresiva(s, r)); }
 function _esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// ═══════════════════════════════════════════════════════════════
+// INICIALIZACIÓN
+// ═══════════════════════════════════════════════════════════════
+actualizarObjetivo();
+cargarEstadoSVM();
 window.addEventListener('pagehide', desactivarCamara);
 </script>
 </body>

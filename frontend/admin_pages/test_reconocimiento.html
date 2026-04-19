@@ -12,14 +12,13 @@
       min-height: 100vh; padding: 1.75rem 2rem; overflow-y: auto;
     }
 
-    /* ── Layout ─────────────────────────────────────────────────── */
     .test-layout {
       display: grid;
       grid-template-columns: 460px 1fr;
       gap: 1.5rem;
     }
 
-    /* ── Cámara ──────────────────────────────────────────────────── */
+    /* Cámara */
     .test-camara-wrap {
       position: relative; background: #000;
       border-radius: var(--radius-lg); overflow: hidden;
@@ -31,7 +30,13 @@
     .test-camara-wrap video    { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
     .test-camara-wrap canvas   { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
 
-    /* Indicador REC */
+    /* Indicador de manos */
+    .manos-indicator { position:absolute; bottom:8px; left:8px; display:flex; gap:4px; }
+    .mano-pill { padding:.15rem .45rem; border-radius:12px; font-size:.68rem; font-weight:700; background:rgba(0,0,0,.55); }
+    .mano-pill.activa   { background:rgba(34,197,94,.75); color:#fff; }
+    .mano-pill.inactiva { background:rgba(0,0,0,.45); color:rgba(255,255,255,.4); }
+
+    /* REC badge */
     .rec-badge {
       position: absolute; top:10px; right:10px;
       background: var(--danger); color:#fff;
@@ -43,10 +48,8 @@
     @keyframes parpadeo { 0%,100%{opacity:1} 50%{opacity:.25} }
     .rec-dot { width:8px; height:8px; border-radius:50%; background:#fff; animation:parpadeo .8s infinite; }
 
-    /* ── Tabs ────────────────────────────────────────────────────── */
-    .modo-tabs {
-      display:flex; gap:.4rem; margin-bottom:1rem;
-    }
+    /* Tabs */
+    .modo-tabs { display:flex; gap:.4rem; margin-bottom:1rem; }
     .modo-tab {
       flex:1; padding:.5rem; text-align:center; cursor:pointer;
       border-radius:var(--radius-md); border:2px solid var(--border);
@@ -54,39 +57,36 @@
       background:var(--bg-700); color:var(--text-300);
     }
     .modo-tab.active { border-color:var(--accent); color:var(--accent); background:rgba(79,142,247,.12); }
+    .panel-modo        { display:none; flex-direction:column; gap:1rem; }
+    .panel-modo.activo { display:flex; }
 
-    .panel-modo          { display:none; flex-direction:column; gap:1rem; }
-    .panel-modo.activo   { display:flex; }
-
-    /* ── Display principal ───────────────────────────────────────── */
+    /* Display principal */
     .resultado-display {
       font-size:5.5rem; font-weight:900; line-height:1;
       text-align:center; min-height:5.5rem;
-      font-family:var(--font-mono);
-      transition: color .2s;
+      font-family:var(--font-mono); transition: color .2s;
     }
     .resultado-display.letra  { color: var(--accent); text-shadow:0 0 40px rgba(79,142,247,.35); }
     .resultado-display.exito  { color: var(--success); text-shadow:0 0 40px rgba(34,197,94,.35); }
     .resultado-display.fallo  { color: var(--danger);  text-shadow:0 0 40px rgba(239,68,68,.2); }
     .resultado-display.espera { color: var(--text-400); }
 
-    /* ── Barra de confianza ──────────────────────────────────────── */
+    /* Barra confianza */
     .conf-label { display:flex; justify-content:space-between; font-size:.8rem; color:var(--text-300); margin-bottom:.4rem; }
 
-    /* ── Candidatos top3 ────────────────────────────────────────── */
+    /* Candidatos */
     .candidatos-list { display:flex; flex-direction:column; gap:.4rem; }
     .cand-item {
       display:flex; align-items:center; gap:.75rem;
       padding:.45rem .75rem; background:var(--bg-700);
       border-radius:var(--radius-sm); border:1px solid var(--border);
     }
-    .cand-nombre { font-family:var(--font-mono); font-weight:700; font-size:1rem; min-width:80px; }
+    .cand-nombre { font-family:var(--font-mono); font-weight:700; font-size:1rem; min-width:90px; }
     .cand-bar-wrap { flex:1; background:var(--bg-900); border-radius:999px; height:8px; overflow:hidden; }
     .cand-bar { height:100%; border-radius:999px; transition:width .25s ease; }
     .cand-pct { font-size:.78rem; color:var(--text-300); min-width:40px; text-align:right; }
-    .cand-dist { font-size:.7rem; color:var(--text-400); min-width:52px; text-align:right; font-family:var(--font-mono); }
 
-    /* ── Historial ───────────────────────────────────────────────── */
+    /* Historial */
     .historial-wrap { display:flex; flex-wrap:wrap; gap:.3rem; min-height:36px; }
     .hist-chip {
       background:var(--bg-700); border:1px solid var(--border);
@@ -97,18 +97,13 @@
     .hist-chip.word { background:rgba(79,142,247,.15); border-color:rgba(79,142,247,.3); color:var(--accent); }
     @keyframes popIn { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
 
-    /* ── Indicadores de frames ───────────────────────────────────── */
-    .frames-barra {
-      display:flex; gap:3px; flex-wrap:wrap; margin:.4rem 0;
-    }
-    .frame-dot {
-      width:9px; height:9px; border-radius:50%;
-      background:var(--bg-500); transition:background .1s;
-    }
+    /* Dots de frames */
+    .frames-barra { display:flex; gap:3px; flex-wrap:wrap; margin:.4rem 0; }
+    .frame-dot { width:9px; height:9px; border-radius:50%; background:var(--bg-500); transition:background .1s; }
     .frame-dot.lleno { background:var(--accent); }
-    .frame-dot.min   { background:var(--success); }
+    .frame-dot.ok    { background:var(--success); }
 
-    /* ── Estado y badges ─────────────────────────────────────────── */
+    /* Estado / badges */
     .estado-badge {
       display:inline-flex; align-items:center; gap:.4rem;
       padding:.3rem .75rem; border-radius:999px;
@@ -119,10 +114,19 @@
     .estado-badge.activo { background:rgba(34,197,94,.12); color:var(--success); border-color:rgba(34,197,94,.25); }
     .estado-dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
 
+    .motor-badge {
+      display:inline-flex; align-items:center; gap:.3rem;
+      padding:.2rem .55rem; border-radius:4px; font-size:.72rem; font-weight:700;
+      background:rgba(79,142,247,.15); color:var(--accent);
+      border:1px solid rgba(79,142,247,.3);
+    }
+    .motor-badge.svm { background:rgba(168,85,247,.15); color:#a855f7; border-color:rgba(168,85,247,.3); }
+    .motor-badge.sin { background:rgba(239,68,68,.12);  color:var(--danger); border-color:rgba(239,68,68,.2); }
+
     .mano-indicator { text-align:center; font-size:.82rem; color:var(--text-300); margin-top:.4rem; transition:color .3s; }
     .mano-indicator.detectada { color:var(--success); }
 
-    /* ── Log ─────────────────────────────────────────────────────── */
+    /* Log */
     .test-log {
       background:var(--bg-900); border-radius:var(--radius-md);
       padding:.75rem; font-family:var(--font-mono);
@@ -134,26 +138,37 @@
     .log-warn { color:#f59e0b; }
     .log-err  { color:var(--danger); }
 
-    /* ── Stats ───────────────────────────────────────────────────── */
+    /* Stats */
     .stat-mini { background:var(--bg-700); border:1px solid var(--border); border-radius:var(--radius-md); padding:.6rem .75rem; }
     .stat-mini-label { font-size:.72rem; color:var(--text-300); text-transform:uppercase; letter-spacing:.05em; }
     .stat-mini-value { font-size:1.4rem; font-weight:700; font-family:var(--font-mono); margin-top:.1rem; }
 
-    /* ── Umbral info ─────────────────────────────────────────────── */
-    .umbral-info {
+    /* Info SVM */
+    .svm-info-box {
       display:flex; align-items:center; justify-content:space-between;
       padding:.45rem .75rem; background:var(--bg-700);
       border:1px solid var(--border); border-radius:var(--radius-sm);
       font-size:.78rem; color:var(--text-300);
     }
-    .umbral-valor { font-family:var(--font-mono); font-weight:700; color:var(--accent); }
+    .svm-info-val { font-family:var(--font-mono); font-weight:700; color:#a855f7; }
+
+    /* Alerta sin modelo */
+    .alerta-sin-modelo {
+      padding:.75rem 1rem; border-radius:var(--radius-md);
+      background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2);
+      color:var(--danger); font-size:.83rem; display:none;
+    }
+    .alerta-sin-modelo.visible { display:block; }
   </style>
 </head>
 <body data-theme-only>
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
-    <h2>🧪 Test de reconocimiento</h2>
+    <h2 style="display:flex;align-items:center;gap:.6rem">
+      🧪 Test de reconocimiento
+    </h2>
     <div style="display:flex;align-items:center;gap:.75rem">
+      <span class="motor-badge svm" id="badge-motor">⚡ SVM</span>
       <span class="estado-badge" id="badge-camara">
         <span class="estado-dot"></span> Cámara apagada
       </span>
@@ -161,28 +176,31 @@
     </div>
   </div>
 
-  <!-- Tabs de modo -->
   <div class="modo-tabs">
-    <div class="modo-tab active" id="tab-letra"   onclick="cambiarModo('letra')">✋ Letras estáticas</div>
-    <div class="modo-tab"        id="tab-palabra" onclick="cambiarModo('palabra')">🤟 Palabras con movimiento (DTW)</div>
+    <div class="modo-tab active" id="tab-letra" onclick="cambiarModo('letra')">✋ Letras estáticas</div>
+    <div class="modo-tab"        id="tab-svm"   onclick="cambiarModo('svm')">⚡ Gestos con movimiento (SVM)</div>
   </div>
 
   <div class="test-layout">
 
-    <!-- ── CÁMARA (compartida entre modos) ────────────────────────── -->
+    <!-- CÁMARA -->
     <div>
       <div class="test-camara-wrap" id="camara-wrap">
         <video id="test-video" autoplay muted playsinline></video>
         <canvas id="test-canvas"></canvas>
         <div class="rec-badge" id="rec-badge"><div class="rec-dot"></div> REC</div>
+        <div class="manos-indicator">
+          <span class="mano-pill inactiva" id="pill-derecha">D</span>
+          <span class="mano-pill inactiva" id="pill-izquierda">I</span>
+        </div>
       </div>
       <div class="mano-indicator" id="mano-indicator">Sin mano detectada</div>
 
       <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="iniciarCamara()">📷 Iniciar cámara</button>
-        <button class="btn btn-danger btn-sm"  onclick="detenerCamara()">⏹ Detener</button>
-        <button class="btn btn-ghost btn-sm"   onclick="limpiarTodo()">🗑 Limpiar</button>
-        <button class="btn btn-ghost btn-sm"   onclick="cargarGestos()">🔄 Recargar gestos</button>
+        <button class="btn btn-danger  btn-sm" onclick="detenerCamara()">⏹ Detener</button>
+        <button class="btn btn-ghost   btn-sm" onclick="limpiarTodo()">🗑 Limpiar</button>
+        <button class="btn btn-ghost   btn-sm" onclick="cargarGestos()">🔄 Recargar</button>
       </div>
 
       <div class="card card-sm" style="margin-top:1rem">
@@ -191,19 +209,17 @@
       </div>
     </div>
 
-    <!-- ── PANEL DERECHO ──────────────────────────────────────────── -->
+    <!-- PANEL DERECHO -->
     <div>
 
-      <!-- ══ PANEL LETRA ══════════════════════════════════════════════ -->
+      <!-- PANEL LETRA -->
       <div class="panel-modo activo" id="panel-letra">
 
         <div class="card card-sm">
           <h4 style="margin-bottom:.75rem">Letra detectada</h4>
           <div class="resultado-display letra" id="letra-display">—</div>
           <div style="margin-top:.85rem">
-            <div class="conf-label">
-              <span>Confianza</span><span id="letra-conf-val">0%</span>
-            </div>
+            <div class="conf-label"><span>Confianza</span><span id="letra-conf-val">0%</span></div>
             <div class="progress" style="height:10px">
               <div class="progress-bar" id="letra-conf-bar" style="width:0%;transition:width .15s,background .3s"></div>
             </div>
@@ -246,111 +262,103 @@
           </div>
         </div>
 
-      </div>
+      </div><!-- fin panel-letra -->
 
-      <!-- ══ PANEL PALABRA ════════════════════════════════════════════ -->
-      <div class="panel-modo" id="panel-palabra">
+      <!-- PANEL SVM -->
+      <div class="panel-modo" id="panel-svm">
+
+        <div class="alerta-sin-modelo" id="alerta-sin-modelo">
+          ⚠️ El modelo SVM no está entrenado. Ve al <strong>Entrenador de gestos</strong>,
+          graba muestras y presiona <strong>Entrenar modelo SVM</strong>.
+        </div>
 
         <div class="card card-sm">
-          <h4 style="margin-bottom:.6rem">Palabra reconocida</h4>
-          <div class="resultado-display espera" id="palabra-display">—</div>
-          <div style="margin-top:.85rem">
-            <div class="conf-label">
-              <span>Confianza DTW</span><span id="palabra-conf-val">—</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+            <h4>Gesto reconocido (SVM)</h4>
+            <div class="svm-info-box" style="padding:.2rem .5rem;gap:.4rem">
+              Gestos: <span class="svm-info-val" id="svm-gestos-count">—</span>
             </div>
+          </div>
+          <div class="resultado-display espera" id="svm-display">—</div>
+          <div style="margin-top:.85rem">
+            <div class="conf-label"><span>Confianza SVM</span><span id="svm-conf-val">—</span></div>
             <div class="progress" style="height:10px">
-              <div class="progress-bar" id="palabra-conf-bar" style="width:0%;transition:width .3s,background .3s"></div>
+              <div class="progress-bar" id="svm-conf-bar" style="width:0%;transition:width .3s,background .3s"></div>
             </div>
           </div>
         </div>
 
-        <!-- Instrucciones y control de grabación -->
         <div class="card card-sm">
           <h4 style="margin-bottom:.6rem">Captura de movimiento</h4>
-
           <p class="text-sm text-muted" style="margin:0 0 .75rem">
-            Haz el movimiento completo de la seña. El sistema acumula frames
-            automáticamente mientras hay mano visible. Cuando termines, presiona
-            <strong>Evaluar</strong> o retira la mano un segundo.
+            Haz el movimiento completo con ambas manos visibles. El sistema
+            acumula frames automáticamente. Cuando termines, presiona
+            <strong>Evaluar con SVM</strong> o retira las manos.
           </p>
-
-          <!-- Indicador de frames acumulados -->
           <div style="font-size:.78rem;color:var(--text-300);margin-bottom:.3rem">
             Frames acumulados:
-            <span id="frames-count" style="font-weight:700;color:var(--accent)">0</span>
-            / <span id="frames-max">30</span>
-            <span id="frames-min-label" style="color:var(--text-400);margin-left:.4rem">(mínimo: <span id="frames-min">8</span>)</span>
+            <span id="svm-frames-count" style="font-weight:700;color:var(--accent)">0</span>
+            / <span id="svm-frames-max">50</span>
+            <span style="color:var(--text-400);margin-left:.4rem">
+              (mínimo: <span id="svm-frames-min">5</span>)
+            </span>
           </div>
-          <div class="frames-barra" id="frames-barra"></div>
-
+          <div class="frames-barra" id="svm-frames-barra"></div>
           <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
-            <button class="btn btn-success btn-sm" id="btn-evaluar" onclick="evaluarDTW()" disabled>
-              🔍 Evaluar movimiento
+            <button class="btn btn-success btn-sm" id="btn-evaluar-svm"
+                    onclick="evaluarSVM()" disabled>
+              ⚡ Evaluar con SVM
             </button>
-            <button class="btn btn-ghost btn-sm" onclick="limpiarCapturaDTW()">
+            <button class="btn btn-ghost btn-sm" onclick="limpiarCapturaSVM()">
               🔄 Limpiar captura
             </button>
           </div>
-
-          <!-- Auto-evaluación -->
           <label style="display:flex;align-items:center;gap:.5rem;margin-top:.6rem;font-size:.82rem;cursor:pointer">
-            <input type="checkbox" id="auto-eval" checked>
-            Auto-evaluar cuando la mano desaparece
+            <input type="checkbox" id="auto-eval-svm" checked>
+            Auto-evaluar cuando las manos desaparecen
           </label>
         </div>
 
-        <!-- Ranking completo -->
         <div class="card card-sm">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-            <h4>Ranking DTW</h4>
-            <div class="umbral-info" style="padding:.2rem .5rem">
-              Umbral: <span class="umbral-valor" id="umbral-dtw-val">—</span>
-            </div>
-          </div>
-          <div class="candidatos-list" id="palabra-ranking">
+          <h4 style="margin-bottom:.75rem">Ranking SVM</h4>
+          <div class="candidatos-list" id="svm-ranking">
             <div class="text-muted text-sm">Haz un movimiento y presiona Evaluar</div>
           </div>
         </div>
 
-        <!-- Historial de palabras -->
         <div class="card card-sm">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
-            <h4>Historial de palabras</h4>
-            <span class="text-xs text-muted">últimas 10</span>
+            <h4>Historial de gestos</h4><span class="text-xs text-muted">últimas 10</span>
           </div>
-          <div class="historial-wrap" id="palabra-historial">
-            <span class="text-muted text-sm">Sin palabras evaluadas aún</span>
+          <div class="historial-wrap" id="svm-historial">
+            <span class="text-muted text-sm">Sin gestos evaluados aún</span>
           </div>
         </div>
 
-        <!-- Stats palabras -->
         <div class="card card-sm">
           <h4 style="margin-bottom:.75rem">Estadísticas</h4>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
             <div class="stat-mini">
               <div class="stat-mini-label">Evaluaciones</div>
-              <div class="stat-mini-value" id="stat-eval" style="color:var(--accent)">0</div>
+              <div class="stat-mini-value" id="svm-stat-eval" style="color:var(--accent)">0</div>
             </div>
             <div class="stat-mini">
-              <div class="stat-mini-label">Reconocidas</div>
-              <div class="stat-mini-value" id="stat-reco" style="color:var(--success)">0</div>
+              <div class="stat-mini-label">Reconocidos</div>
+              <div class="stat-mini-value" id="svm-stat-reco" style="color:var(--success)">0</div>
             </div>
             <div class="stat-mini">
-              <div class="stat-mini-label">Palabras en BD</div>
-              <div class="stat-mini-value" id="stat-palabras">—</div>
+              <div class="stat-mini-label">Gestos en modelo</div>
+              <div class="stat-mini-value" id="svm-stat-gestos">—</div>
             </div>
             <div class="stat-mini">
-              <div class="stat-mini-label">Última palabra</div>
-              <div class="stat-mini-value" id="stat-ult-pal" style="color:#f59e0b">—</div>
+              <div class="stat-mini-label">Último gesto</div>
+              <div class="stat-mini-value" id="svm-stat-ult" style="color:#f59e0b">—</div>
             </div>
           </div>
         </div>
 
-      </div>
-      <!-- fin panel-palabra -->
-
+      </div><!-- fin panel-svm -->
     </div>
-    <!-- fin columna derecha -->
   </div>
 
 <script src="../js/navbar.js"></script>
@@ -359,32 +367,29 @@
 // ═══════════════════════════════════════════════════════════════════════
 // ESTADO GLOBAL
 // ═══════════════════════════════════════════════════════════════════════
-let stream        = null;
-let frameTimer    = null;
-let fpsTimer      = null;
-let fpsCount      = 0;
-let modoActual    = 'letra';
+let stream     = null;
+let frameTimer = null;
+let fpsTimer   = null;
+let fpsCount   = 0;
+let modoActual = 'letra';
 
-// Datos de gestos
-let letrasDB      = [];
-let palabrasDB    = [];
+let letrasDB = [];
+let ultimaLetra = '';
+let histLetra   = [];
+let totalDet    = 0;
+let confAcc     = 0;
 
-// Estado modo letra
-let ultimaLetra   = '';
-let histLetra     = [];
-let totalDet      = 0;
-let confAcc       = 0;
-
-// Estado modo palabra
-const FRAMES_MAX  = 30;
-const FRAMES_MIN  = 8;
-let framesAcum    = [];        // Frames normalizados acumulados
-let hayMano       = false;
-let timerAutoEval = null;      // Temporizador para auto-evaluar al retirar la mano
-let evalCount     = 0;
-let recoCount     = 0;
-let histPalabra   = [];
-let evaluando     = false;
+const SVM_FRAMES_MAX = 20;
+const SVM_FRAMES_MIN = 5;
+let svmFrames    = [];
+let hayMano      = false;
+let timerAutoSVM = null;
+let svmEvalCount = 0;
+let svmRecoCount = 0;
+let svmHistorial = [];
+let svmEvaluando = false;
+let svmModeloActivo = false;
+let svmGestosModelo = [];
 
 const video  = document.getElementById('test-video');
 const canvas = document.getElementById('test-canvas');
@@ -396,7 +401,7 @@ const ctx    = canvas.getContext('2d');
 function log(msg, tipo = 'info') {
   const el   = document.getElementById('test-log');
   const line = document.createElement('div');
-  line.className = tipo === 'ok' ? 'log-ok' : tipo === 'error' ? 'log-err' : tipo === 'warn' ? 'log-warn' : '';
+  line.className   = tipo === 'ok' ? 'log-ok' : tipo === 'error' ? 'log-err' : tipo === 'warn' ? 'log-warn' : '';
   line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
   el.appendChild(line);
   el.scrollTop = el.scrollHeight;
@@ -408,26 +413,50 @@ function log(msg, tipo = 'info') {
 // ═══════════════════════════════════════════════════════════════════════
 function cambiarModo(modo) {
   modoActual = modo;
-  ['letra', 'palabra'].forEach(m => {
+  ['letra', 'svm'].forEach(m => {
     document.getElementById(`tab-${m}`).classList.toggle('active', m === modo);
     document.getElementById(`panel-${m}`).classList.toggle('activo', m === modo);
   });
-  limpiarCapturaDTW();
+  limpiarCapturaSVM();
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// CARGAR GESTOS
+// CARGAR ESTADO
 // ═══════════════════════════════════════════════════════════════════════
 async function cargarGestos() {
   try {
     const { gestos } = await Api.get('/admin/gestos');
-    letrasDB   = gestos.filter(g => g.tipo !== 'word');
-    palabrasDB = gestos.filter(g => g.tipo === 'word');
-    document.getElementById('stat-letras').textContent  = letrasDB.length;
-    document.getElementById('stat-palabras').textContent = palabrasDB.length;
-    log(`${letrasDB.length} letras + ${palabrasDB.length} palabras DTW cargadas`, 'ok');
+    letrasDB = gestos.filter(g => g.tipo !== 'word');
+    document.getElementById('stat-letras').textContent = letrasDB.length;
+    log(`${letrasDB.length} letras cargadas`, 'ok');
   } catch(e) {
-    log('Error cargando gestos: ' + e.message, 'error');
+    log('Error cargando letras: ' + e.message, 'error');
+  }
+
+  try {
+    const data = await Api.get('/admin/estado-svm');
+    svmModeloActivo = data.modelo_entrenado;
+    svmGestosModelo = data.gestos_en_modelo || [];
+
+    const badgeMotor = document.getElementById('badge-motor');
+    const alerta     = document.getElementById('alerta-sin-modelo');
+
+    if (svmModeloActivo) {
+      badgeMotor.textContent = `⚡ SVM (${svmGestosModelo.length} gestos)`;
+      badgeMotor.className   = 'motor-badge svm';
+      alerta.classList.remove('visible');
+      document.getElementById('svm-gestos-count').textContent = svmGestosModelo.length;
+      document.getElementById('svm-stat-gestos').textContent  = svmGestosModelo.length;
+      log(`Modelo SVM activo: [${svmGestosModelo.join(', ')}]`, 'ok');
+    } else {
+      badgeMotor.textContent = '⚠ SVM sin entrenar';
+      badgeMotor.className   = 'motor-badge sin';
+      alerta.classList.add('visible');
+      document.getElementById('svm-gestos-count').textContent = '—';
+      log('Modelo SVM no entrenado aún', 'warn');
+    }
+  } catch(e) {
+    log('Error cargando estado SVM: ' + e.message, 'error');
   }
 }
 
@@ -455,10 +484,13 @@ async function iniciarCamara() {
 }
 
 function detenerCamara() {
-  clearInterval(frameTimer); clearInterval(fpsTimer);
+  clearInterval(frameTimer);
+  clearInterval(fpsTimer);
   stream?.getTracks().forEach(t => t.stop());
-  video.srcObject = null; stream = null;
+  video.srcObject = null;
+  stream = null;
   setBadge(false);
+  _actualizarPills(null, null);
   log('Cámara detenida', 'warn');
 }
 
@@ -468,14 +500,21 @@ function setBadge(activo) {
   b.classList.toggle('activo', activo);
 }
 
+function _actualizarPills(right, left) {
+  const pillD = document.getElementById('pill-derecha');
+  const pillI = document.getElementById('pill-izquierda');
+  if (pillD) pillD.className = 'mano-pill ' + (right ? 'activa' : 'inactiva');
+  if (pillI) pillI.className = 'mano-pill ' + (left  ? 'activa' : 'inactiva');
+}
+
 // ═══════════════════════════════════════════════════════════════════════
-// CAPTURA DE FRAME (loop cada ~66ms)
+// LOOP DE CAPTURA
 // ═══════════════════════════════════════════════════════════════════════
 async function capturarYEnviar() {
   if (!video.videoWidth) return;
   fpsCount++;
 
-  ctx.save(); ctx.scale(-1, 1);
+  ctx.save(); ctx.scale(-1,1);
   ctx.drawImage(video, -640, 0, 640, 480);
   ctx.restore();
 
@@ -490,20 +529,22 @@ async function capturarYEnviar() {
     const data = await res.json();
     const ind  = document.getElementById('mano-indicator');
 
+    // Actualizar pills de manos en la cámara
+    _actualizarPills(data.landmarks_right, data.landmarks_left);
+
     if (data.landmarks) {
-      ind.textContent = '✋ Mano detectada';
+      const manosN = data.manos_detectadas || 1;
+      ind.textContent = manosN === 2 ? '🤲 Ambas manos' : '✋ 1 mano detectada';
       ind.className   = 'mano-indicator detectada';
 
       if (modoActual === 'letra') {
+        // ── PARCHE 2 MANOS: buscarLetra usa solo los primeros 63 floats (mano derecha)
         buscarLetra(data.landmarks);
       } else {
-        acumularFrame(data.landmarks);
+        acumularFrameSVM(data.landmarks);
       }
 
-      // Cancelar timer de auto-eval si la mano volvió
-      if (!hayMano && modoActual === 'palabra') {
-        clearTimeout(timerAutoEval);
-      }
+      if (!hayMano && modoActual === 'svm') clearTimeout(timerAutoSVM);
       hayMano = true;
 
     } else {
@@ -512,48 +553,49 @@ async function capturarYEnviar() {
 
       if (modoActual === 'letra') {
         limpiarDeteccionLetra();
-      } else if (hayMano && framesAcum.length >= FRAMES_MIN) {
-        // Mano desapareció con suficientes frames → auto-evaluar
-        if (document.getElementById('auto-eval').checked) {
-          clearTimeout(timerAutoEval);
-          timerAutoEval = setTimeout(() => {
-            if (!hayMano) evaluarDTW();
-          }, 600);   // 600ms de pausa para confirmar que terminó el gesto
+      } else if (hayMano && svmFrames.length >= SVM_FRAMES_MIN) {
+        if (document.getElementById('auto-eval-svm').checked) {
+          clearTimeout(timerAutoSVM);
+          timerAutoSVM = setTimeout(() => { if (!hayMano) evaluarSVM(); }, 600);
         }
       }
       hayMano = false;
     }
   } catch(e) {
-    // Silencioso para no saturar el log
+    // Silencioso
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// MODO LETRA — búsqueda euclidiana local
+// MODO LETRA — búsqueda euclidiana usando solo mano derecha (63 floats)
 // ═══════════════════════════════════════════════════════════════════════
 function buscarLetra(landmarks) {
   if (!letrasDB.length) return;
+
+  // ── PARCHE 2 MANOS: tomar solo los primeros 63 floats (mano derecha)
+  // landmarks puede ser 126 floats ahora; la BD de letras tiene 63
+  const lmDerecha = landmarks.slice(0, 63);
 
   const umbral     = 0.5;
   const resultados = letrasDB.map(g => {
     if (!g.landmarks || g.landmarks.length !== 63) return { nombre:g.nombre, dist:999 };
     let suma = 0;
     for (let i = 0; i < 63; i++) {
-      const d = (landmarks[i] || 0) - (g.landmarks[i] || 0);
+      const d = (lmDerecha[i] || 0) - (g.landmarks[i] || 0);
       suma += d * d;
     }
     return { nombre:g.nombre, dist:Math.sqrt(suma) };
   });
-  resultados.sort((a, b) => a.dist - b.dist);
+  resultados.sort((a,b) => a.dist - b.dist);
 
-  const mejor    = resultados[0];
+  const mejor     = resultados[0];
   const confianza = Math.max(0, Math.min(1, 1 - mejor.dist / umbral));
-  actualizarUILetra(mejor.nombre, confianza, resultados.slice(0, 3), umbral);
+  actualizarUILetra(mejor.nombre, confianza, resultados.slice(0,3), umbral);
 }
 
 function actualizarUILetra(nombre, confianza, top3, umbral) {
   const pct = Math.round(confianza * 100);
-  document.getElementById('letra-display').textContent = nombre || '?';
+  document.getElementById('letra-display').textContent  = nombre || '?';
   document.getElementById('letra-conf-val').textContent = pct + '%';
 
   const bar = document.getElementById('letra-conf-bar');
@@ -565,18 +607,16 @@ function actualizarUILetra(nombre, confianza, top3, umbral) {
     histLetra.push(nombre);
     if (histLetra.length > 20) histLetra.shift();
     totalDet++; confAcc += confianza;
-
     document.getElementById('stat-det').textContent  = totalDet;
     document.getElementById('stat-conf').textContent = Math.round(confAcc / totalDet * 100) + '%';
     document.getElementById('stat-ult').textContent  = nombre;
     document.getElementById('letra-historial').innerHTML =
       histLetra.map(l => `<span class="hist-chip">${l}</span>`).join('');
-
     log(`Letra: "${nombre}" (${pct}%)`, confianza > 0.7 ? 'ok' : 'warn');
   }
 
   const colores = ['var(--accent)', 'var(--success)', 'var(--text-300)'];
-  document.getElementById('letra-candidatos').innerHTML = top3.map((c, i) => {
+  document.getElementById('letra-candidatos').innerHTML = top3.map((c,i) => {
     const conf  = Math.max(0, Math.round((1 - c.dist / umbral) * 100));
     const color = colores[i] || colores[2];
     return `<div class="cand-item">
@@ -594,67 +634,60 @@ function limpiarDeteccionLetra() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// MODO PALABRA — acumulación de frames
+// MODO SVM — acumulación de frames de 126 floats
 // ═══════════════════════════════════════════════════════════════════════
-function acumularFrame(landmarks) {
-  if (framesAcum.length >= FRAMES_MAX) return;   // Ventana llena
+function acumularFrameSVM(landmarks) {
+  if (svmFrames.length >= SVM_FRAMES_MAX) return;
 
-  framesAcum.push(landmarks);
+  // landmarks: 126 floats (derecha + izquierda)
+  svmFrames.push(landmarks);
 
-  // Actualizar indicador visual
-  const count = framesAcum.length;
-  document.getElementById('frames-count').textContent = count;
+  const count = svmFrames.length;
+  document.getElementById('svm-frames-count').textContent = count;
+  document.getElementById('btn-evaluar-svm').disabled     = count < SVM_FRAMES_MIN;
 
-  // Habilitar botón evaluar cuando hay suficientes frames
-  document.getElementById('btn-evaluar').disabled = count < FRAMES_MIN;
-
-  // Badge REC mientras acumula
   document.getElementById('rec-badge').classList.toggle('visible', count > 0);
-  document.getElementById('camara-wrap').classList.toggle('grabando', count > 0 && count < FRAMES_MAX);
-
-  // Dibujar dots de frames
-  actualizarFramesDots(count);
+  document.getElementById('camara-wrap').classList.toggle('grabando', count > 0 && count < SVM_FRAMES_MAX);
+  _actualizarDotsFramesSVM(count);
 }
 
-function actualizarFramesDots(count) {
-  document.getElementById('frames-max').textContent = FRAMES_MAX;
-  document.getElementById('frames-min').textContent = FRAMES_MIN;
-
-  document.getElementById('frames-barra').innerHTML =
-    Array.from({length: FRAMES_MAX}, (_, i) => {
-      const cls = i < count
-        ? (count >= FRAMES_MIN ? 'frame-dot lleno' : 'frame-dot')
-        : 'frame-dot';
-      // Los primeros FRAMES_MIN son "mínimo requerido"
-      const style = i === FRAMES_MIN - 1 ? 'margin-right:4px;' : '';
-      return `<div class="${cls}" style="${style}"></div>`;
+function _actualizarDotsFramesSVM(count) {
+  document.getElementById('svm-frames-max').textContent = SVM_FRAMES_MAX;
+  document.getElementById('svm-frames-min').textContent = SVM_FRAMES_MIN;
+  document.getElementById('svm-frames-barra').innerHTML =
+    Array.from({length: Math.min(SVM_FRAMES_MAX, 50)}, (_,i) => {
+      const cls = i < count ? (count >= SVM_FRAMES_MIN ? 'frame-dot ok' : 'frame-dot lleno') : 'frame-dot';
+      return `<div class="${cls}"></div>`;
     }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// EVALUAR DTW — enviar frames al backend
+// EVALUAR CON SVM — envía frames de 126 floats a /predecir-svm
 // ═══════════════════════════════════════════════════════════════════════
-async function evaluarDTW() {
-  if (framesAcum.length < FRAMES_MIN) {
-    log(`Necesitas al menos ${FRAMES_MIN} frames (tienes ${framesAcum.length})`, 'warn');
+async function evaluarSVM() {
+  if (svmFrames.length < SVM_FRAMES_MIN) {
+    log(`Necesitas al menos ${SVM_FRAMES_MIN} frames (tienes ${svmFrames.length})`, 'warn');
     return;
   }
-  if (evaluando) return;
-  evaluando = true;
+  if (svmEvaluando) return;
+  svmEvaluando = true;
 
-  clearTimeout(timerAutoEval);
-  document.getElementById('btn-evaluar').disabled = true;
+  clearTimeout(timerAutoSVM);
+  document.getElementById('btn-evaluar-svm').disabled = true;
   document.getElementById('rec-badge').classList.remove('visible');
   document.getElementById('camara-wrap').classList.remove('grabando');
 
-  const framesParaEnviar = [...framesAcum];
-  log(`Evaluando DTW con ${framesParaEnviar.length} frames...`, 'info');
+  const framesToSend = [...svmFrames];
+  log(`Enviando ${framesToSend.length} frames × ${framesToSend[0]?.length || '?'} dims al SVM...`, 'info');
 
   try {
-    const res = await fetch('/api/admin/test-dtw', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${Auth.token()}` },
-      body: JSON.stringify({ frames: framesParaEnviar })
+    const res = await fetch('/api/admin/predecir-svm', {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${Auth.token()}`
+      },
+      body: JSON.stringify({ frames: framesToSend })
     });
 
     if (!res.ok) {
@@ -663,34 +696,35 @@ async function evaluarDTW() {
     }
 
     const data = await res.json();
-    mostrarResultadoDTW(data);
-
-    // Limpiar frames después de evaluar para la próxima captura
-    limpiarCapturaDTW(false);
+    mostrarResultadoSVM(data);
+    limpiarCapturaSVM(false);
 
   } catch(e) {
-    log('Error en evaluación DTW: ' + e.message, 'error');
-    document.getElementById('btn-evaluar').disabled = false;
+    log('Error en predicción SVM: ' + e.message, 'error');
+    document.getElementById('btn-evaluar-svm').disabled = false;
   } finally {
-    evaluando = false;
+    svmEvaluando = false;
   }
 }
 
-function mostrarResultadoDTW(data) {
-  evalCount++;
-  document.getElementById('stat-eval').textContent = evalCount;
+function mostrarResultadoSVM(data) {
+  svmEvalCount++;
+  document.getElementById('svm-stat-eval').textContent = svmEvalCount;
 
-  // Guardar umbral actual
-  if (data.umbral_dtw !== undefined) {
-    document.getElementById('umbral-dtw-val').textContent = data.umbral_dtw.toFixed(3);
+  if (data.error) {
+    log(`⚠ ${data.error}`, 'warn');
+    document.getElementById('alerta-sin-modelo').classList.add('visible');
+    document.getElementById('svm-display').textContent  = '?';
+    document.getElementById('svm-display').className    = 'resultado-display fallo';
+    document.getElementById('svm-conf-val').textContent = data.error;
+    return;
   }
 
-  const display  = document.getElementById('palabra-display');
-  const confVal  = document.getElementById('palabra-conf-val');
-  const confBar  = document.getElementById('palabra-conf-bar');
+  const display = document.getElementById('svm-display');
+  const confVal = document.getElementById('svm-conf-val');
+  const confBar = document.getElementById('svm-conf-bar');
 
   if (data.mejor) {
-    // ✅ Reconocida
     const pct = Math.round(data.mejor.confianza * 100);
     display.textContent = data.mejor.nombre;
     display.className   = 'resultado-display exito';
@@ -698,76 +732,70 @@ function mostrarResultadoDTW(data) {
     confBar.style.width      = pct + '%';
     confBar.style.background = pct > 70 ? 'var(--success)' : '#f59e0b';
 
-    recoCount++;
-    document.getElementById('stat-reco').textContent    = recoCount;
-    document.getElementById('stat-ult-pal').textContent = data.mejor.nombre;
+    svmRecoCount++;
+    document.getElementById('svm-stat-reco').textContent = svmRecoCount;
+    document.getElementById('svm-stat-ult').textContent  = data.mejor.nombre;
 
-    histPalabra.push(data.mejor.nombre);
-    if (histPalabra.length > 10) histPalabra.shift();
-    document.getElementById('palabra-historial').innerHTML =
-      histPalabra.map(p => `<span class="hist-chip word">${p}</span>`).join('');
+    svmHistorial.push(data.mejor.nombre);
+    if (svmHistorial.length > 10) svmHistorial.shift();
+    document.getElementById('svm-historial').innerHTML =
+      svmHistorial.map(p => `<span class="hist-chip word">${p}</span>`).join('');
 
     document.getElementById('camara-wrap').classList.add('lista');
     setTimeout(() => document.getElementById('camara-wrap').classList.remove('lista'), 1500);
-
-    log(`✅ Palabra: "${data.mejor.nombre}" (${pct}%, dist=${data.mejor.distancia})`, 'ok');
+    log(`✅ SVM: "${data.mejor.nombre}" (${pct}%)`, 'ok');
 
   } else {
-    // ❌ No reconocida
     display.textContent = '?';
     display.className   = 'resultado-display fallo';
-    const mejorDist = data.ranking?.[0]?.distancia ?? '—';
-    confVal.textContent = `No reconocida (umbral=${data.umbral_dtw?.toFixed(3) ?? '—'})`;
+    confVal.textContent = 'Sin coincidencia';
     confBar.style.width = '0%';
-
-    log(`❌ Sin coincidencia. Mejor dist=${mejorDist}, umbral=${data.umbral_dtw}`, 'warn');
-
-    if (data.palabras_en_bd === 0) {
-      log('No hay palabras entrenadas en la BD. Usa el entrenador primero.', 'warn');
-    }
+    log('❌ SVM: sin coincidencia suficiente', 'warn');
   }
 
-  // Mostrar ranking completo
-  const colores = ['var(--success)', 'var(--accent)', 'var(--text-300)'];
-  const umbral  = data.umbral_dtw || 0.45;
-
-  document.getElementById('palabra-ranking').innerHTML =
+  const colores = ['#a855f7', 'var(--accent)', 'var(--text-300)'];
+  document.getElementById('svm-ranking').innerHTML =
     (data.ranking || []).map((c, i) => {
-      const pct   = Math.round(c.confianza * 100);
-      const color = i === 0 && data.mejor ? 'var(--success)' : (colores[i] || colores[2]);
-      const superaUmbral = c.distancia <= umbral;
-      return `<div class="cand-item" style="${superaUmbral ? 'border-color:rgba(34,197,94,.3)' : ''}">
+      const pct     = Math.round(c.confianza * 100);
+      const color   = i === 0 && data.mejor ? '#a855f7' : (colores[i] || colores[2]);
+      const esMejor = i === 0 && data.mejor;
+      return `<div class="cand-item" style="${esMejor ? 'border-color:rgba(168,85,247,.4)' : ''}">
         <div class="cand-nombre" style="color:${color}">${c.nombre}</div>
         <div class="cand-bar-wrap">
           <div class="cand-bar" style="width:${pct}%;background:${color}"></div>
         </div>
         <div class="cand-pct">${pct}%</div>
-        <div class="cand-dist">d=${c.distancia}</div>
       </div>`;
-    }).join('') || '<div class="text-muted text-sm">Sin palabras en BD</div>';
+    }).join('') || '<div class="text-muted text-sm">Sin gestos en el modelo</div>';
+
+  if (data.gestos_en_modelo?.length) {
+    svmGestosModelo = data.gestos_en_modelo;
+    document.getElementById('svm-gestos-count').textContent = svmGestosModelo.length;
+    document.getElementById('svm-stat-gestos').textContent  = svmGestosModelo.length;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 // LIMPIAR
 // ═══════════════════════════════════════════════════════════════════════
-function limpiarCapturaDTW(limpiarDisplay = true) {
-  framesAcum = [];
-  clearTimeout(timerAutoEval);
-  document.getElementById('frames-count').textContent = '0';
-  document.getElementById('btn-evaluar').disabled     = true;
+function limpiarCapturaSVM(limpiarDisplay = true) {
+  svmFrames = [];
+  clearTimeout(timerAutoSVM);
+  document.getElementById('svm-frames-count').textContent = '0';
+  document.getElementById('btn-evaluar-svm').disabled     = true;
   document.getElementById('rec-badge').classList.remove('visible');
   document.getElementById('camara-wrap').classList.remove('grabando', 'lista');
-  actualizarFramesDots(0);
+  _actualizarDotsFramesSVM(0);
+
   if (limpiarDisplay) {
-    document.getElementById('palabra-display').textContent = '—';
-    document.getElementById('palabra-display').className   = 'resultado-display espera';
-    document.getElementById('palabra-conf-val').textContent = '—';
-    document.getElementById('palabra-conf-bar').style.width = '0%';
+    document.getElementById('svm-display').textContent  = '—';
+    document.getElementById('svm-display').className    = 'resultado-display espera';
+    document.getElementById('svm-conf-val').textContent = '—';
+    document.getElementById('svm-conf-bar').style.width = '0%';
   }
 }
 
 function limpiarTodo() {
-  // Letras
   histLetra = []; ultimaLetra = ''; totalDet = 0; confAcc = 0;
   limpiarDeteccionLetra();
   document.getElementById('letra-historial').innerHTML  = '';
@@ -775,19 +803,22 @@ function limpiarTodo() {
   document.getElementById('stat-det').textContent  = '0';
   document.getElementById('stat-conf').textContent = '—';
   document.getElementById('stat-ult').textContent  = '—';
-  // Palabras
-  histPalabra = []; evalCount = 0; recoCount = 0;
-  limpiarCapturaDTW();
-  document.getElementById('palabra-historial').innerHTML = '<span class="text-muted text-sm">Sin palabras evaluadas aún</span>';
-  document.getElementById('palabra-ranking').innerHTML   = '<div class="text-muted text-sm">Haz un movimiento y presiona Evaluar</div>';
-  document.getElementById('stat-eval').textContent = '0';
-  document.getElementById('stat-reco').textContent = '0';
-  document.getElementById('stat-ult-pal').textContent = '—';
+
+  svmHistorial = []; svmEvalCount = 0; svmRecoCount = 0;
+  limpiarCapturaSVM();
+  document.getElementById('svm-historial').innerHTML   = '<span class="text-muted text-sm">Sin gestos evaluados aún</span>';
+  document.getElementById('svm-ranking').innerHTML     = '<div class="text-muted text-sm">Haz un movimiento y presiona Evaluar</div>';
+  document.getElementById('svm-stat-eval').textContent = '0';
+  document.getElementById('svm-stat-reco').textContent = '0';
+  document.getElementById('svm-stat-ult').textContent  = '—';
   log('Sesión limpiada', 'warn');
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════
 window.addEventListener('beforeunload', detenerCamara);
-window.addEventListener('pagehide', detenerCamara);
+window.addEventListener('pagehide',     detenerCamara);
 
 cargarGestos();
 </script>

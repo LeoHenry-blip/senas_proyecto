@@ -1,12 +1,15 @@
 """
-routes/admin.py
-===============
-Panel de administración: gestos, configuración, usuarios, estadísticas.
-Todas las rutas requieren rol admin.
-v3.1 — agrega endpoint /admin/test-dtw para depuración de palabras con movimiento
+routes/admin.py  v4.1
+=====================
+Panel de administración con soporte SVM para gestos con movimiento.
+Cambios v4.1:
+  - guardar_muestra_svm: acepta 63 o 126 floats por frame (soporte 2 manos)
+  - guardar_muestra_svm: mínimo de frames reducido de 5 a 3
+  - entrenar_svm: acepta frames de 63 o 126 dims al filtrar muestras válidas
 """
 
 import json
+import os
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -16,6 +19,8 @@ from core.auth import requerir_admin, get_usuario_actual
 from db.database import db, get_config, set_config, exportar_gestos_a_json
 
 router = APIRouter(prefix="/admin", tags=["Administración"])
+
+RUTA_MUESTRAS = os.path.join(os.path.dirname(__file__), "..", "muestras_svm.json")
 
 
 # =============================================================================
@@ -66,7 +71,7 @@ async def estadisticas(admin = Depends(requerir_admin)):
 
 
 # =============================================================================
-# GESTOS
+# GESTOS (sistema original — letras estáticas)
 # =============================================================================
 
 class GuestoBody(BaseModel):
@@ -74,7 +79,7 @@ class GuestoBody(BaseModel):
     tipo: Optional[str] = "letter"
     descripcion: Optional[str] = ""
     landmarks: List[float]
-    secuencia: Optional[List[List[List[float]]]] = None   # [reps][frames][63f]
+    secuencia: Optional[List[List[List[float]]]] = None
     muestras_usadas: Optional[int] = 1
 
 
@@ -100,15 +105,8 @@ async def listar_gestos(admin = Depends(requerir_admin)):
 
 @router.post("/gestos", status_code=201)
 async def crear_gesto(body: GuestoBody, admin = Depends(requerir_admin)):
-    """
-    Crea o actualiza un gesto.
-    Letras  → landmarks normalizados.
-    Palabras → landmarks (primer frame) + secuencia DTW completa [reps][frames][63f].
-    """
     if len(body.landmarks) != 63:
         raise HTTPException(400, f"Se esperan 63 landmarks, se recibieron {len(body.landmarks)}")
-    if body.tipo == "word" and not body.secuencia:
-        raise HTTPException(400, "Las palabras con movimiento requieren el campo 'secuencia'")
 
     vector = np.array(body.landmarks, dtype=np.float32)
     norma  = np.linalg.norm(vector)
@@ -118,12 +116,6 @@ async def crear_gesto(body: GuestoBody, admin = Depends(requerir_admin)):
 
     secuencia_json = None
     if body.secuencia:
-        if sum(len(rep) for rep in body.secuencia) < 3:
-            raise HTTPException(400, "La secuencia tiene muy pocos frames")
-        for i, rep in enumerate(body.secuencia):
-            for j, frame in enumerate(rep):
-                if len(frame) != 63:
-                    raise HTTPException(400, f"Frame {j} rep {i}: se esperan 63 floats")
         secuencia_json = json.dumps(body.secuencia)
 
     nombre_upper = body.nombre.upper().strip()
@@ -148,7 +140,6 @@ async def crear_gesto(body: GuestoBody, admin = Depends(requerir_admin)):
 
     exportar_gestos_a_json()
     _recargar_reconocedor()
-    print(f"[Admin] {'Palabra DTW' if body.tipo == 'word' else 'Letra'} '{nombre_upper}' {accion}")
     return {"ok": True, "accion": accion, "nombre": nombre_upper}
 
 
@@ -173,31 +164,186 @@ async def exportar_json(admin = Depends(requerir_admin)):
 
 
 # =============================================================================
-# TEST DTW — depuración de palabras con movimiento desde el panel de test
+# SVM — MUESTRAS
+# =============================================================================
+
+class MuestraSVMBody(BaseModel):
+    nombre:  str
+    frames:  List[List[float]]
+    agregar: Optional[bool] = True
+
+
+@router.post("/muestras-svm", status_code=201)
+async def guardar_muestra_svm(body: MuestraSVMBody, admin = Depends(requerir_admin)):
+    """
+    Guarda una muestra de entrenamiento SVM.
+    Acepta frames de 63 floats (1 mano) o 126 floats (2 manos).
+    Mínimo 3 frames por muestra.
+    """
+    # ── CORRECCIÓN 1: mínimo reducido de 5 a 3
+    if len(body.frames) < 3:
+        raise HTTPException(400, f"Mínimo 3 frames por muestra, se recibieron {len(body.frames)}")
+
+    # ── CORRECCIÓN 2: acepta 63 o 126 floats por frame
+    for i, frame in enumerate(body.frames):
+        if len(frame) not in (63, 126):
+            raise HTTPException(400, f"Frame {i}: se esperan 63 o 126 floats, hay {len(frame)}")
+
+    nombre = body.nombre.upper().strip()
+
+    muestras = _cargar_muestras_svm()
+
+    if not body.agregar or nombre not in muestras:
+        if not body.agregar:
+            muestras[nombre] = []
+        else:
+            muestras.setdefault(nombre, [])
+
+    muestras[nombre].append(body.frames)
+
+    _guardar_muestras_svm(muestras)
+
+    total = len(muestras[nombre])
+    print(f"[Admin SVM] Muestra guardada para '{nombre}': {total} total")
+
+    return {
+        "ok":             True,
+        "nombre":         nombre,
+        "total_muestras": total,
+        "gestos_en_bd":   list(muestras.keys()),
+    }
+
+
+@router.delete("/muestras-svm/{nombre}")
+async def eliminar_muestras_gesto(nombre: str, admin = Depends(requerir_admin)):
+    muestras = _cargar_muestras_svm()
+    nombre_u = nombre.upper()
+    if nombre_u not in muestras:
+        raise HTTPException(404, f"No hay muestras para '{nombre_u}'")
+    del muestras[nombre_u]
+    _guardar_muestras_svm(muestras)
+    return {"ok": True, "mensaje": f"Muestras de '{nombre_u}' eliminadas"}
+
+
+@router.get("/muestras-svm")
+async def listar_muestras_svm(admin = Depends(requerir_admin)):
+    muestras = _cargar_muestras_svm()
+    resumen  = {nombre: len(seqs) for nombre, seqs in muestras.items()}
+    return {
+        "gestos":          resumen,
+        "total_gestos":    len(resumen),
+        "total_muestras":  sum(resumen.values()),
+        "listo_para_entrenar": len(resumen) >= 2 and all(n >= 5 for n in resumen.values()),
+    }
+
+
+# =============================================================================
+# SVM — ENTRENAMIENTO
+# =============================================================================
+
+@router.post("/entrenar-svm")
+async def entrenar_svm(admin = Depends(requerir_admin)):
+    """
+    Entrena el modelo SVM con todas las muestras acumuladas.
+    Acepta muestras de 63 o 126 dims por frame.
+    """
+    muestras_raw = _cargar_muestras_svm()
+
+    if len(muestras_raw) < 2:
+        raise HTTPException(400,
+            f"Necesitas al menos 2 gestos para entrenar. "
+            f"Solo hay {len(muestras_raw)}: {list(muestras_raw.keys())}")
+
+    muestras_np = {}
+    for nombre, seqs in muestras_raw.items():
+        arrs = []
+        for seq in seqs:
+            arr = np.array(seq, dtype=np.float32)
+            # ── CORRECCIÓN 3: acepta 63 o 126 dims, mínimo 3 frames
+            if arr.shape[1] in (63, 126) and len(arr) >= 3:
+                arrs.append(arr)
+        if arrs:
+            muestras_np[nombre] = arrs
+
+    if len(muestras_np) < 2:
+        raise HTTPException(400, "No hay suficientes muestras válidas para entrenar")
+
+    from modelo_svm import obtener_modelo, recargar_modelo, ModeloSVM, RUTA_MODELO
+    modelo_tmp = ModeloSVM()
+    resultado  = modelo_tmp.entrenar(muestras_np)
+
+    if not resultado["ok"]:
+        raise HTTPException(400, resultado.get("error", "Error entrenando"))
+
+    modelo_tmp.guardar(RUTA_MODELO)
+    recargar_modelo()
+
+    print(f"[Admin SVM] Modelo entrenado: {resultado}")
+    return resultado
+
+
+# =============================================================================
+# SVM — PREDICCIÓN (para panel de test)
+# =============================================================================
+
+class PredecirSVMBody(BaseModel):
+    frames: List[List[float]]
+
+
+@router.post("/predecir-svm")
+async def predecir_svm(body: PredecirSVMBody, admin = Depends(requerir_admin)):
+    if len(body.frames) < 3:
+        raise HTTPException(400, f"Mínimo 3 frames, se recibieron {len(body.frames)}")
+
+    from modelo_svm import obtener_modelo
+    modelo = obtener_modelo()
+
+    if not modelo.entrenado:
+        return {
+            "mejor":   None,
+            "ranking": [],
+            "error":   "Modelo SVM no entrenado. Ve al entrenador y entrena primero.",
+        }
+
+    secuencia = np.array(body.frames, dtype=np.float32)
+    nombre, confianza = modelo.predecir(secuencia)
+    ranking           = modelo.predecir_ranking(secuencia)
+
+    return {
+        "mejor":            {"nombre": nombre, "confianza": round(confianza, 4)} if nombre else None,
+        "ranking":          ranking,
+        "frames_recibidos": len(body.frames),
+        "gestos_en_modelo": modelo.clases,
+    }
+
+
+# =============================================================================
+# SVM — ESTADO
+# =============================================================================
+
+@router.get("/estado-svm")
+async def estado_svm(admin = Depends(requerir_admin)):
+    from modelo_svm import obtener_modelo, RUTA_MODELO
+    modelo   = obtener_modelo()
+    muestras = _cargar_muestras_svm()
+    return {
+        "modelo_entrenado":   modelo.entrenado,
+        "gestos_en_modelo":   modelo.clases if modelo.entrenado else [],
+        "modelo_existe":      os.path.exists(RUTA_MODELO),
+        "muestras_guardadas": {n: len(s) for n, s in muestras.items()},
+    }
+
+
+# =============================================================================
+# TEST DTW (sistema original — mantener compatibilidad)
 # =============================================================================
 
 class TestDTWBody(BaseModel):
-    # Lista de frames capturados en el navegador: [[63f] x N]
-    # Cada frame ya viene normalizado (extraído por /api/admin/extraer-landmarks)
     frames: List[List[float]]
 
 
 @router.post("/test-dtw")
 async def test_dtw(body: TestDTWBody, admin = Depends(requerir_admin)):
-    """
-    Evalúa una secuencia de frames contra todas las palabras entrenadas con DTW.
-
-    El panel de test acumula frames mientras el usuario hace el movimiento,
-    luego los envía aquí. Se ejecuta el mismo DTW que usa el reconocedor
-    en la sala de reunión, devolviendo el ranking completo para depuración.
-
-    Returns:
-        mejor:            La palabra reconocida si supera el umbral (o null)
-        ranking:          Todas las palabras ordenadas por distancia DTW
-        frames_recibidos: Cuántos frames llegaron
-        palabras_en_bd:   Cuántas palabras están entrenadas
-        umbral_dtw:       Umbral actual configurado
-    """
     if len(body.frames) < 5:
         raise HTTPException(400, f"Mínimo 5 frames, se recibieron {len(body.frames)}")
 
@@ -207,7 +353,7 @@ async def test_dtw(body: TestDTWBody, admin = Depends(requerir_admin)):
 
     bd = _obtener_bd()
     if bd is None:
-        raise HTTPException(503, "Reconocedor no disponible. Reinicia el servidor.")
+        raise HTTPException(503, "Reconocedor no disponible.")
 
     if not bd.palabras:
         return {
@@ -215,11 +361,9 @@ async def test_dtw(body: TestDTWBody, admin = Depends(requerir_admin)):
             "frames_recibidos": len(body.frames),
             "palabras_en_bd": 0,
             "umbral_dtw": bd.umbral_dtw,
-            "mensaje": "No hay palabras con movimiento entrenadas en la BD"
         }
 
     from base_datos import dtw_distancia_rapida
-
     secuencia = np.array(body.frames, dtype=np.float32)
     ranking   = []
 
@@ -230,29 +374,21 @@ async def test_dtw(body: TestDTWBody, admin = Depends(requerir_admin)):
             if dist < mejor_dist:
                 mejor_dist = dist
         confianza = max(0.0, min(1.0, 1.0 - mejor_dist / bd.umbral_dtw))
-        ranking.append({
-            "nombre":    nombre,
-            "confianza": round(confianza, 4),
-            "distancia": round(mejor_dist, 4),
-        })
+        ranking.append({"nombre": nombre, "confianza": round(confianza, 4), "distancia": round(mejor_dist, 4)})
 
     ranking.sort(key=lambda x: x["distancia"])
-
-    mejor_reconocido = None
-    if ranking and ranking[0]["distancia"] <= bd.umbral_dtw:
-        mejor_reconocido = ranking[0]
+    mejor = ranking[0] if ranking and ranking[0]["distancia"] <= bd.umbral_dtw else None
 
     return {
-        "mejor":            mejor_reconocido,
-        "ranking":          ranking,
+        "mejor": mejor, "ranking": ranking,
         "frames_recibidos": len(body.frames),
-        "palabras_en_bd":   len(bd.palabras),
-        "umbral_dtw":       bd.umbral_dtw,
+        "palabras_en_bd": len(bd.palabras),
+        "umbral_dtw": bd.umbral_dtw,
     }
 
 
 # =============================================================================
-# CONFIGURACIÓN DEL RECONOCEDOR
+# CONFIGURACIÓN
 # =============================================================================
 
 @router.get("/config")
@@ -280,14 +416,25 @@ async def actualizar_config(body: dict, admin = Depends(requerir_admin)):
 
 
 # =============================================================================
-# HELPERS INTERNOS
+# HELPERS
 # =============================================================================
 
+def _cargar_muestras_svm() -> dict:
+    if not os.path.exists(RUTA_MUESTRAS):
+        return {}
+    try:
+        with open(RUTA_MUESTRAS, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _guardar_muestras_svm(muestras: dict) -> None:
+    with open(RUTA_MUESTRAS, 'w', encoding='utf-8') as f:
+        json.dump(muestras, f)
+
+
 def _obtener_bd():
-    """
-    Retorna la BaseDatosGestos activa.
-    Primero intenta el reconocedor en memoria; si falla, carga desde JSON.
-    """
     try:
         from main import reconocedor_global
         if reconocedor_global and reconocedor_global.db:
@@ -298,7 +445,7 @@ def _obtener_bd():
         from base_datos import BaseDatosGestos
         return BaseDatosGestos("gestos.json")
     except Exception as e:
-        print(f"[Admin] No se pudo cargar BD para test DTW: {e}")
+        print(f"[Admin] No se pudo cargar BD: {e}")
         return None
 
 
@@ -309,7 +456,6 @@ def _recargar_reconocedor():
             reconocedor_global.db = __import__(
                 'base_datos', fromlist=['BaseDatosGestos']
             ).BaseDatosGestos("gestos.json")
-            print("[Admin] Reconocedor recargado")
     except Exception as e:
         print(f"[Admin] No se pudo recargar reconocedor: {e}")
 
@@ -324,6 +470,5 @@ def _aplicar_config_reconocedor():
         reconocedor_global.tiempo_confirmacion  = float(get_config("tiempo_confirmacion", "1.2"))
         reconocedor_global.tiempo_pausa_letra   = float(get_config("tiempo_pausa_letra", "1.5"))
         reconocedor_global.tiempo_pausa_palabra = float(get_config("tiempo_pausa_palabra", "3.0"))
-        print("[Admin] Configuración aplicada en tiempo real")
     except Exception as e:
         print(f"[Admin] Error aplicando config: {e}")
