@@ -29,7 +29,7 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 git pull origin main
 Cuando terminas de trabajar(para mandar tus actualizaciones a tus compañeros )
 git add .
-git commit -m "modficaciones en el modelo de entrenamiento de gestos en movimiento, ahora para el movimiento ya no se usa tdw ahora se utiliza svm el cual esta funcionando mejor pero requiere mas muetras de entrenamiento. las letras sigue se guardan en gestos.json, mientras que las palabras se guardan en muestras_svm.json. y en admin.html se add una funcion para que al refrescar la oagina no se redirija a otra pagina "
+git commit -m "se sube modelo_svm.pkl"
 git push origin main
 
 
