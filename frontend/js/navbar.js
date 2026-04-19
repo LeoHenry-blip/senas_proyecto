@@ -48,28 +48,66 @@
     }
   }
 
-  // ---- Inyecta el navbar en el <body> ----
-  function renderNavbar() {
-    // Modo solo-tema: sub-página en iframe, no necesita navbar
-    if (document.body.hasAttribute('data-theme-only')) return;
+ function renderNavbar() {
+  if (document.body.hasAttribute('data-theme-only')) return;
+  if (document.querySelector('.navbar')) return;
 
-    // Si la página ya tiene su propio navbar estático, NO lo duplica
-    if (document.querySelector('.navbar')) return;
+  const LOGO_URL = 'https://cdn-icons-png.flaticon.com/512/8750/8750693.png';
+  const LEARN_URL = 'https://www.strongasl.com/?lang=es';
 
-    // Sin navbar propio → crea uno genérico
-    const nav = document.createElement('nav');
-    nav.className = 'navbar';
-    nav.innerHTML = `
-      <span class="navbar-brand"> Sistema Traductor de señas</span>
-      <div class="navbar-nav">
-        <span id="nav-nombre" class="text-muted text-sm"></span>
-        <span id="nav-badge-admin"></span>
-        <button id="theme-toggle" class="btn btn-ghost btn-sm theme-btn" title="Modo claro">🌙</button>
-        <button class="btn btn-ghost btn-sm" onclick="Auth && Auth.logout()">Salir</button>
-      </div>
-    `;
-    document.body.insertBefore(nav, document.body.firstChild);
-  }
+  const nav = document.createElement('nav');
+  nav.className = 'navbar';
+
+  nav.innerHTML = `
+    <span class="navbar-brand" style="display:flex;align-items:center;gap:.65rem;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(20,184,166,.12));border:1px solid rgba(99,102,241,.25);box-shadow:0 0 12px rgba(99,102,241,.2);flex-shrink:0;padding:5px;">
+        <img src="${LOGO_URL}" alt="Logo" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 4px rgba(99,102,241,.5));" onerror="this.parentElement.style.display='none';">
+      </span>
+      Sistema Inteligente de Traducción de Señas
+    </span>
+    <div class="navbar-nav">
+      <span id="nav-nombre" class="text-muted text-sm"></span>
+      <span id="nav-badge-admin"></span>
+      <a id="btn-aprender" href="${LEARN_URL}" target="_blank" rel="noopener noreferrer">
+        🔆 Diccionario de Señas ¡Aprende señas!
+      </a>
+      <button id="theme-toggle" class="btn btn-ghost btn-sm theme-btn" title="Modo claro">🌙</button>
+      <button class="btn btn-ghost btn-sm" onclick="Auth && Auth.logout()">Salir</button>
+    </div>
+  `;
+
+  /* Estilos del botón aplicados por JS — evita el problema de comillas en innerHTML */
+  document.body.insertBefore(nav, document.body.firstChild);
+
+  const btnAprender = nav.querySelector('#btn-aprender');
+  Object.assign(btnAprender.style, {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '.4rem',
+    fontSize: '.82rem',
+    fontWeight: '600',
+    color: '#a5b4fc',
+    textDecoration: 'none',
+    padding: '.35rem .85rem',
+    borderRadius: '8px',
+    border: '1px solid rgba(99,102,241,.25)',
+    background: 'rgba(99,102,241,.1)',
+    transition: 'background .2s, border-color .2s, transform .15s',
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+  });
+
+  btnAprender.addEventListener('mouseover', () => {
+    btnAprender.style.background    = 'rgba(99,102,241,.22)';
+    btnAprender.style.borderColor   = 'rgba(99,102,241,.5)';
+    btnAprender.style.transform     = 'translateY(-1px)';
+  });
+  btnAprender.addEventListener('mouseout', () => {
+    btnAprender.style.background    = 'rgba(99,102,241,.1)';
+    btnAprender.style.borderColor   = 'rgba(99,102,241,.25)';
+    btnAprender.style.transform     = 'translateY(0)';
+  });
+}
 
   // ---- Engancha el botón de tema con delegación de eventos ----
   // Delegación en document: funciona sin importar cuándo
