@@ -5,6 +5,7 @@ pandas
 scikit-learn
 joblib
 pyttsx3
+
 #PROYECTO SISTEMA TRADUCTOR DE GESTOS (PARA PERSONAS CON DISCAPACIDAD)
 Lenguaje utlizado =ASL (Lenguaje de señas Americana) 26 letras
 #Entorno de trabajo Venv

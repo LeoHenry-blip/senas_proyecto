@@ -12,22 +12,35 @@
       min-height: 100vh; padding: 1.75rem 2rem; overflow-y: auto;
     }
 
+    /* Tabs principales */
+    .main-tabs { display: flex; gap: .4rem; margin-bottom: 1.25rem; }
+    .main-tab {
+      flex: 1; padding: .55rem; text-align: center; cursor: pointer;
+      border-radius: var(--radius-md); border: 2px solid var(--border);
+      font-weight: 600; font-size: .85rem; transition: all .2s;
+      background: var(--bg-700); color: var(--text-300);
+    }
+    .main-tab.active {
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(79,142,247,.12);
+    }
+    .panel { display: none; }
+    .panel.activo { display: block; }
+
+    /* Toolbar */
     .toolbar {
       display: flex; align-items: center; gap: .75rem;
       margin-bottom: 1.25rem; flex-wrap: wrap;
     }
     .toolbar-spacer { flex: 1; }
-
     .search-input {
       background: var(--bg-700); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: .45rem .75rem;
       color: var(--text-100); font-size: .85rem;
-      outline: none; width: 220px;
-      transition: border-color .15s;
+      outline: none; width: 220px; transition: border-color .15s;
     }
     .search-input:focus { border-color: var(--accent); }
     .search-input::placeholder { color: var(--text-300); }
-
     .filter-btn {
       padding: .35rem .75rem; border-radius: var(--radius-md);
       border: 1px solid var(--border); background: var(--bg-700);
@@ -37,32 +50,7 @@
     .filter-btn:hover  { background: var(--bg-600); color: var(--text-100); }
     .filter-btn.active { background: rgba(79,142,247,.15); border-color: var(--accent); color: var(--accent); }
 
-    .gestos-lista { display: flex; flex-direction: column; gap: .5rem; }
-
-    .gesto-item {
-      display: flex; align-items: center; gap: .75rem;
-      padding: .7rem 1rem;
-      background: var(--bg-700); border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      transition: background .15s;
-      animation: fadeIn .2s ease;
-    }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
-    .gesto-item:hover { background: var(--bg-600); }
-
-    .gesto-nombre {
-      font-family: var(--font-mono); font-weight: 700;
-      font-size: 1.05rem; min-width: 70px; color: var(--text-100);
-    }
-    .gesto-desc  { flex: 1; font-size: .83rem; color: var(--text-300); }
-    .gesto-meta  { font-size: .75rem; color: var(--text-400); text-align: right; line-height: 1.5; }
-
-    .empty-state {
-      text-align: center; padding: 3rem 1rem;
-      color: var(--text-300); font-size: .9rem;
-    }
-    .empty-state .empty-icon { font-size: 3rem; margin-bottom: .75rem; }
-
+    /* Resumen badges */
     .resumen-badges {
       display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.25rem;
     }
@@ -72,6 +60,84 @@
       font-size: .8rem; font-weight: 600; border: 1px solid var(--border);
       background: var(--bg-700);
     }
+
+    /* Lista gestos (letras) */
+    .gestos-lista { display: flex; flex-direction: column; gap: .5rem; }
+    .gesto-item {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .7rem 1rem;
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: var(--radius-md); transition: background .15s;
+      animation: fadeIn .2s ease;
+    }
+    .gesto-item:hover { background: var(--bg-600); }
+    .gesto-nombre {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: 1.05rem; min-width: 70px; color: var(--text-100);
+    }
+    .gesto-desc  { flex: 1; font-size: .83rem; color: var(--text-300); }
+    .gesto-meta  { font-size: .75rem; color: var(--text-400); text-align: right; line-height: 1.5; }
+
+    /* Lista SVM */
+    .svm-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: .75rem;
+    }
+    .svm-card {
+      background: var(--bg-700); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 1rem;
+      display: flex; flex-direction: column; gap: .5rem;
+      animation: fadeIn .2s ease; transition: background .15s;
+    }
+    .svm-card:hover { background: var(--bg-600); }
+    .svm-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .svm-nombre {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: 1.05rem; color: var(--text-100);
+    }
+    .svm-count {
+      font-size: .78rem; font-weight: 600; padding: .2rem .5rem;
+      border-radius: 20px;
+    }
+    .svm-count.ok   { background: rgba(34,197,94,.15); color: var(--success); }
+    .svm-count.warn { background: rgba(245,158,11,.15); color: #f59e0b; }
+    .svm-progress-wrap { background: var(--bg-500); border-radius: 4px; height: 6px; }
+    .svm-progress-bar  { height: 6px; border-radius: 4px; background: var(--accent); transition: width .3s; }
+    .svm-progress-bar.completo { background: var(--success); }
+    .svm-meta { font-size: .75rem; color: var(--text-400); }
+    .svm-modelo-badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      padding: .2rem .5rem; border-radius: 4px; font-size: .7rem; font-weight: 600;
+      background: rgba(34,197,94,.12); color: var(--success);
+      border: 1px solid rgba(34,197,94,.2);
+    }
+    .svm-modelo-badge.ausente {
+      background: rgba(239,68,68,.1); color: var(--danger);
+      border-color: rgba(239,68,68,.2);
+    }
+
+    /* Estado modelo SVM */
+    .modelo-estado {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .75rem 1rem; border-radius: var(--radius-md);
+      border: 1px solid var(--border); background: var(--bg-700);
+      margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .modelo-estado-icon { font-size: 1.5rem; }
+    .modelo-estado-info { flex: 1; }
+    .modelo-estado-titulo { font-weight: 700; font-size: .9rem; }
+    .modelo-estado-sub { font-size: .78rem; color: var(--text-300); margin-top: .1rem; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 3rem 1rem;
+      color: var(--text-300); font-size: .9rem;
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: .75rem; }
+
+    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
   </style>
 </head>
 <body data-theme-only>
@@ -80,133 +146,319 @@
   <h2>📋 Gestos registrados</h2>
 </div>
 
-<!-- Resumen -->
-<div class="resumen-badges" id="resumen-badges">
-  <div class="resumen-badge">⏳ Cargando...</div>
+<!-- Tabs principales -->
+<div class="main-tabs">
+  <div class="main-tab active" id="tab-letras"   onclick="cambiarTab('letras')">✋ Letras estáticas</div>
+  <div class="main-tab"        id="tab-palabras" onclick="cambiarTab('palabras')">🤟 Palabras SVM</div>
 </div>
 
-<!-- Toolbar -->
-<div class="toolbar">
-  <input class="search-input" id="search-input" type="text"
-         placeholder="🔍 Buscar gesto..."
-         oninput="filtrar()">
+<!-- ══════════════════════════════════════════════
+     PANEL LETRAS
+════════════════════════════════════════════════ -->
+<div class="panel activo" id="panel-letras">
 
-  <div style="display:flex; gap:.4rem">
-    <button class="filter-btn active" data-tipo="todos" onclick="setFiltro(this,'todos')">Todos</button>
-    <button class="filter-btn" data-tipo="letter" onclick="setFiltro(this,'letter')">✋ Letras</button>
-    <button class="filter-btn" data-tipo="word"   onclick="setFiltro(this,'word')">🤟 Palabras</button>
+  <div class="resumen-badges" id="resumen-letras">
+    <div class="resumen-badge">⏳ Cargando...</div>
   </div>
 
-  <div class="toolbar-spacer"></div>
+  <div class="toolbar">
+    <input class="search-input" id="search-letras" type="text"
+           placeholder="🔍 Buscar letra..."
+           oninput="filtrarLetras()">
+    <div style="display:flex; gap:.4rem">
+      <button class="filter-btn active" data-tipo="todos" onclick="setFiltroLetra(this,'todos')">Todos</button>
+      <button class="filter-btn" data-tipo="letter"       onclick="setFiltroLetra(this,'letter')">✋ Letras</button>
+      <button class="filter-btn" data-tipo="word"         onclick="setFiltroLetra(this,'word')">🤟 Palabras</button>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <button class="btn btn-ghost btn-sm"    onclick="exportarJSON()">⬇️ Exportar JSON</button>
+    <button class="btn btn-primary btn-sm"  onclick="cargarGestos()">🔄 Actualizar</button>
+  </div>
 
-  <button class="btn btn-ghost btn-sm" onclick="exportarJSON()">⬇️ Exportar JSON</button>
-  <button class="btn btn-primary btn-sm" onclick="cargarGestos()">🔄 Actualizar</button>
+  <div class="gestos-lista" id="gestos-lista">
+    <div class="empty-state"><div class="empty-icon">⏳</div>Cargando gestos...</div>
+  </div>
 </div>
 
-<!-- Lista -->
-<div class="gestos-lista" id="gestos-lista">
-  <div class="empty-state"><div class="empty-icon">⏳</div>Cargando gestos...</div>
+<!-- ══════════════════════════════════════════════
+     PANEL PALABRAS SVM
+════════════════════════════════════════════════ -->
+<div class="panel" id="panel-palabras">
+
+  <!-- Estado del modelo -->
+  <div class="modelo-estado" id="modelo-estado">
+    <div class="modelo-estado-icon">⏳</div>
+    <div class="modelo-estado-info">
+      <div class="modelo-estado-titulo">Cargando estado del modelo...</div>
+      <div class="modelo-estado-sub"></div>
+    </div>
+  </div>
+
+  <div class="resumen-badges" id="resumen-svm">
+    <div class="resumen-badge">⏳ Cargando...</div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search-input" id="search-svm" type="text"
+           placeholder="🔍 Buscar gesto..."
+           oninput="filtrarSVM()">
+    <div class="toolbar-spacer"></div>
+    <button class="btn btn-primary btn-sm" onclick="cargarEstadoSVM()">🔄 Actualizar</button>
+  </div>
+
+  <div id="svm-lista">
+    <div class="empty-state"><div class="empty-icon">⏳</div>Cargando muestras SVM...</div>
+  </div>
 </div>
 
 <script src="../js/navbar.js"></script>
 <script src="../js/app.js"></script>
 <script>
-  let todosLosGestos = [];
-  let filtroTipo     = 'todos';
 
-  async function cargarGestos() {
+// ═══════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════
+function cambiarTab(tab) {
+  ['letras','palabras'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`panel-${t}`).classList.toggle('activo', t === tab);
+  });
+  if (tab === 'palabras') cargarEstadoSVM();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PANEL LETRAS
+// ═══════════════════════════════════════════════════════════════
+let todosLosGestos = [];
+let filtroTipo     = 'todos';
+
+async function cargarGestos() {
+  document.getElementById('gestos-lista').innerHTML =
+    '<div class="empty-state"><div class="empty-icon">⏳</div>Cargando...</div>';
+  try {
+    const { gestos } = await Api.get('/admin/gestos');
+    todosLosGestos = gestos;
+    actualizarResumenLetras(gestos);
+    filtrarLetras();
+  } catch(e) {
     document.getElementById('gestos-lista').innerHTML =
-      '<div class="empty-state"><div class="empty-icon">⏳</div>Cargando...</div>';
-    try {
-      const { gestos } = await Api.get('/admin/gestos');
-      todosLosGestos = gestos;
-      actualizarResumen(gestos);
-      filtrar();
-    } catch(e) {
-      document.getElementById('gestos-lista').innerHTML =
-        `<div class="empty-state"><div class="empty-icon">❌</div>Error: ${e.message}</div>`;
-    }
+      `<div class="empty-state"><div class="empty-icon">❌</div>Error: ${e.message}</div>`;
   }
+}
 
-  function actualizarResumen(gestos) {
-    const letras   = gestos.filter(g => g.tipo === 'letter').length;
-    const palabras = gestos.filter(g => g.tipo === 'word').length;
-    document.getElementById('resumen-badges').innerHTML = `
-      <div class="resumen-badge" style="color:var(--text-100)">
-        📦 <strong>${gestos.length}</strong> total
+function actualizarResumenLetras(gestos) {
+  const letras   = gestos.filter(g => g.tipo === 'letter').length;
+  const palabras = gestos.filter(g => g.tipo === 'word').length;
+  document.getElementById('resumen-letras').innerHTML = `
+    <div class="resumen-badge" style="color:var(--text-100)">📦 <strong>${gestos.length}</strong> total</div>
+    <div class="resumen-badge" style="color:var(--accent)">✋ <strong>${letras}</strong> letras</div>
+    <div class="resumen-badge" style="color:var(--success)">🤟 <strong>${palabras}</strong> palabras</div>
+  `;
+}
+
+function setFiltroLetra(el, tipo) {
+  filtroTipo = tipo;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  filtrarLetras();
+}
+
+function filtrarLetras() {
+  const q    = document.getElementById('search-letras').value.trim().toUpperCase();
+  const list = todosLosGestos.filter(g => {
+    const matchTipo = filtroTipo === 'todos' || g.tipo === filtroTipo;
+    const matchQ    = !q || g.nombre.includes(q) || (g.descripcion || '').toUpperCase().includes(q);
+    return matchTipo && matchQ;
+  });
+  renderListaLetras(list);
+}
+
+function renderListaLetras(gestos) {
+  const contenedor = document.getElementById('gestos-lista');
+  if (!gestos.length) {
+    contenedor.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        No hay gestos que coincidan con el filtro
+      </div>`;
+    return;
+  }
+  contenedor.innerHTML = gestos.map(g => `
+    <div class="gesto-item" id="item-${g.nombre}">
+      <div class="gesto-nombre">${g.nombre}</div>
+      <span class="badge ${g.tipo==='letter'?'badge-blue':'badge-green'}"
+            style="min-width:60px;text-align:center">
+        ${g.tipo === 'letter' ? '✋ letra' : '🤟 palabra'}
+      </span>
+      <div class="gesto-desc">${g.descripcion || '—'}</div>
+      <div class="gesto-meta">
+        ${g.muestras_usadas} muestras<br>
+        ${g.creado_por_nombre || 'Sistema'}
       </div>
-      <div class="resumen-badge" style="color:var(--accent)">
-        ✋ <strong>${letras}</strong> letras
+      <button class="btn btn-danger btn-sm" onclick="eliminarGesto('${g.nombre}')">✕ Eliminar</button>
+    </div>
+  `).join('');
+}
+
+async function eliminarGesto(nombre) {
+  if (!confirm(`¿Eliminar el gesto "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    await Api.delete(`/admin/gestos/${nombre}`);
+    toast(`Gesto "${nombre}" eliminado`, 'success');
+    todosLosGestos = todosLosGestos.filter(g => g.nombre !== nombre);
+    actualizarResumenLetras(todosLosGestos);
+    filtrarLetras();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+async function exportarJSON() {
+  try {
+    await Api.post('/admin/gestos/exportar-json', {});
+    toast('Gestos exportados a gestos.json', 'success');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PANEL PALABRAS SVM
+// ═══════════════════════════════════════════════════════════════
+let datosSVM = {};   // { HOLA: 12, GRACIAS: 8, ... }
+let modeloInfo = { entrenado: false, gestos: [] };
+
+async function cargarEstadoSVM() {
+  document.getElementById('svm-lista').innerHTML =
+    '<div class="empty-state"><div class="empty-icon">⏳</div>Cargando...</div>';
+  try {
+    const data = await Api.get('/admin/estado-svm');
+    modeloInfo = { entrenado: data.modelo_entrenado, gestos: data.gestos_en_modelo || [] };
+    datosSVM   = data.muestras_guardadas || {};
+    actualizarEstadoModelo(data);
+    actualizarResumenSVM(datosSVM);
+    filtrarSVM();
+  } catch(e) {
+    document.getElementById('svm-lista').innerHTML =
+      `<div class="empty-state"><div class="empty-icon">❌</div>Error: ${e.message}</div>`;
+    document.getElementById('modelo-estado').innerHTML = `
+      <div class="modelo-estado-icon">❌</div>
+      <div class="modelo-estado-info">
+        <div class="modelo-estado-titulo">Error cargando estado</div>
+        <div class="modelo-estado-sub">${e.message}</div>
+      </div>`;
+  }
+}
+
+function actualizarEstadoModelo(data) {
+  const el = document.getElementById('modelo-estado');
+  if (data.modelo_entrenado) {
+    el.style.borderColor = 'rgba(34,197,94,.35)';
+    el.innerHTML = `
+      <div class="modelo-estado-icon">✅</div>
+      <div class="modelo-estado-info">
+        <div class="modelo-estado-titulo">Modelo SVM activo</div>
+        <div class="modelo-estado-sub">
+          Gestos en modelo: <strong>${data.gestos_en_modelo.join(', ')}</strong>
+        </div>
       </div>
-      <div class="resumen-badge" style="color:var(--success)">
-        🤟 <strong>${palabras}</strong> palabras
+      <span class="svm-modelo-badge">⚡ Listo para reconocer</span>
+    `;
+  } else {
+    el.style.borderColor = 'rgba(239,68,68,.35)';
+    el.innerHTML = `
+      <div class="modelo-estado-icon">⚠️</div>
+      <div class="modelo-estado-info">
+        <div class="modelo-estado-titulo">Modelo SVM no entrenado</div>
+        <div class="modelo-estado-sub">
+          Graba muestras en el entrenador y presiona "Entrenar modelo SVM".
+        </div>
       </div>
+      <span class="svm-modelo-badge ausente">Sin entrenar</span>
     `;
   }
+}
 
-  function setFiltro(el, tipo) {
-    filtroTipo = tipo;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
-    filtrar();
+function actualizarResumenSVM(muestras) {
+  const gestos  = Object.keys(muestras).length;
+  const total   = Object.values(muestras).reduce((s, n) => s + n, 0);
+  const listos  = Object.values(muestras).filter(n => n >= 5).length;
+  document.getElementById('resumen-svm').innerHTML = `
+    <div class="resumen-badge" style="color:var(--text-100)">🤟 <strong>${gestos}</strong> gestos</div>
+    <div class="resumen-badge" style="color:var(--accent)">🎞 <strong>${total}</strong> muestras totales</div>
+    <div class="resumen-badge" style="color:var(--success)">✓ <strong>${listos}/${gestos}</strong> listos para entrenar</div>
+  `;
+}
+
+function filtrarSVM() {
+  const q      = document.getElementById('search-svm').value.trim().toUpperCase();
+  const entries = Object.entries(datosSVM).filter(([nombre]) =>
+    !q || nombre.includes(q)
+  );
+  renderListaSVM(entries);
+}
+
+function renderListaSVM(entries) {
+  const contenedor = document.getElementById('svm-lista');
+  if (!entries.length) {
+    contenedor.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">${Object.keys(datosSVM).length ? '🔍' : '📭'}</div>
+        ${Object.keys(datosSVM).length
+          ? 'No hay gestos que coincidan'
+          : 'Sin muestras SVM grabadas. Ve al entrenador para grabar gestos con movimiento.'}
+      </div>`;
+    return;
   }
 
-  function filtrar() {
-    const q    = document.getElementById('search-input').value.trim().toUpperCase();
-    const list = todosLosGestos.filter(g => {
-      const matchTipo = filtroTipo === 'todos' || g.tipo === filtroTipo;
-      const matchQ    = !q || g.nombre.includes(q) || (g.descripcion || '').toUpperCase().includes(q);
-      return matchTipo && matchQ;
-    });
-    renderLista(list);
-  }
+  const MIN = 5;
+  const OBJ = 50;
 
-  function renderLista(gestos) {
-    const contenedor = document.getElementById('gestos-lista');
-    if (!gestos.length) {
-      contenedor.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">🔍</div>
-          No hay gestos que coincidan con el filtro
-        </div>`;
-      return;
-    }
-
-    contenedor.innerHTML = gestos.map(g => `
-      <div class="gesto-item" id="item-${g.nombre}">
-        <div class="gesto-nombre">${g.nombre}</div>
-        <span class="badge ${g.tipo==='letter'?'badge-blue':'badge-green'}" style="min-width:60px;text-align:center">
-          ${g.tipo === 'letter' ? '✋ letra' : '🤟 palabra'}
-        </span>
-        <div class="gesto-desc">${g.descripcion || '—'}</div>
-        <div class="gesto-meta">
-          ${g.muestras_usadas} muestras<br>
-          ${g.creado_por_nombre || 'Sistema'}
+  contenedor.innerHTML = `<div class="svm-grid">${
+    entries.map(([nombre, count]) => {
+      const ok      = count >= MIN;
+      const pct     = Math.min(100, Math.round(count / OBJ * 100));
+      const enModel = modeloInfo.gestos.includes(nombre);
+      return `
+        <div class="svm-card">
+          <div class="svm-card-header">
+            <span class="svm-nombre">${nombre}</span>
+            <span class="svm-count ${ok ? 'ok' : 'warn'}">
+              ${count} muestra${count !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div class="svm-progress-wrap">
+            <div class="svm-progress-bar ${count >= OBJ ? 'completo' : ''}"
+                 style="width:${pct}%"></div>
+          </div>
+          <div class="svm-meta">
+            ${pct}% del objetivo (${OBJ} muestras)
+            ${ok ? '' : ` · <span style="color:#f59e0b">Mínimo ${MIN}</span>`}
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:.25rem">
+            <span class="svm-modelo-badge ${enModel ? '' : 'ausente'}">
+              ${enModel ? '⚡ En modelo' : '⏳ Sin entrenar'}
+            </span>
+            <button class="btn btn-danger btn-sm"
+                    onclick="eliminarMuestrasSVM('${nombre}')">✕ Eliminar</button>
+          </div>
         </div>
-        <button class="btn btn-danger btn-sm" onclick="eliminarGesto('${g.nombre}')">✕ Eliminar</button>
-      </div>
-    `).join('');
-  }
+      `;
+    }).join('')
+  }</div>`;
+}
 
-  async function eliminarGesto(nombre) {
-    if (!confirm(`¿Eliminar el gesto "${nombre}"? Esta acción no se puede deshacer.`)) return;
-    try {
-      await Api.delete(`/admin/gestos/${nombre}`);
-      toast(`Gesto "${nombre}" eliminado`, 'success');
-      todosLosGestos = todosLosGestos.filter(g => g.nombre !== nombre);
-      actualizarResumen(todosLosGestos);
-      filtrar();
-    } catch(e) { toast(e.message, 'error'); }
-  }
+async function eliminarMuestrasSVM(nombre) {
+  if (!confirm(`¿Eliminar todas las muestras de "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    await Api.delete(`/admin/muestras-svm/${nombre}`);
+    toast(`Muestras de "${nombre}" eliminadas`, 'success');
+    delete datosSVM[nombre];
+    actualizarResumenSVM(datosSVM);
+    filtrarSVM();
+  } catch(e) { toast(e.message, 'error'); }
+}
 
-  async function exportarJSON() {
-    try {
-      await Api.post('/admin/gestos/exportar-json', {});
-      toast('Gestos exportados a gestos.json', 'success');
-    } catch(e) { toast(e.message, 'error'); }
-  }
-
-  cargarGestos();
+// ═══════════════════════════════════════════════════════════════
+// INICIALIZACIÓN
+// ═══════════════════════════════════════════════════════════════
+cargarGestos();
 </script>
 </body>
 </html>
